@@ -1,12 +1,13 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Map } from "@components/map/map";
 
 @Component({
-  selector: 'app-root',
-  imports: [RouterOutlet],
-  templateUrl: './app.html',
-  styleUrl: './app.scss'
+  selector    : 'app-root',
+  imports : [
+    Map
+  ],
+  templateUrl : './app.html',
+  styleUrl    : './app.scss'
 })
 export class App {
-  protected title = 'SchoolNavigator';
 }

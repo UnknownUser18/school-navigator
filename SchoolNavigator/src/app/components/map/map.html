@@ -1,0 +1,18 @@
+<ko-stage [config]="mapConfig">
+  <ko-layer>
+    <ko-image [config]="mapImage" />
+    @for (point of points; track point.id) {
+      <ko-circle [config]="{
+        x : point.x,
+        y : point.y,
+        radius : 5,
+        fill : 'red'
+      }" (click)="selectedPoint.set(point)" (touchstart)="selectedPoint.set(point)" [tooltipMap]="tooltip" />
+    }
+  </ko-layer>
+</ko-stage>
+
+<tooltip #tooltip>
+  @let point = selectedPoint();
+  <p>Punkt o id: {{ point?.id }}</p>
+</tooltip>
