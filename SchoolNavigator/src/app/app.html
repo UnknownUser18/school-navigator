@@ -1,1 +1,21 @@
-<app-map />
+<main>
+  <app-map />
+</main>
+<nav>
+  <a routerLink="/home" routerLinkActive="active" aria-label="Strona główna">
+    <fa-icon [icon]="faHome" />
+    Start
+  </a>
+  <a routerLink="/timetable" routerLinkActive="active" aria-label="Plan lekcji">
+    <fa-icon [icon]="faCalendarAlt" />
+    Plan lekcji
+  </a>
+  <a routerLink="map" routerLinkActive="active" aria-label="Mapa szkoły">
+    <fa-icon [icon]="faMap" />
+    Mapa
+  </a>
+  <a routerLink="/settings" routerLinkActive="active" aria-label="Ustawienia">
+    <fa-icon [icon]="faCog" />
+    Ustawienia
+  </a>
+</nav>

@@ -1,0 +1,70 @@
+// Paddings
+$padding-2xs: 0.125rem;
+$padding-xs: 0.25rem;
+$padding-sm: 0.5rem;
+$padding-md: 1rem;
+$padding-lg: 1.5rem;
+$padding-xl: 2rem;
+$padding-2xl: 3rem;
+
+// Margins
+$margin-2xs: 0.125rem;
+$margin-xs: 0.25rem;
+$margin-sm: 0.5rem;
+$margin-md: 1rem;
+$margin-lg: 1.5rem;
+$margin-xl: 2rem;
+$margin-2xl: 3rem;
+
+// Font Sizes
+$font-size-2xs: 0.625rem;
+$font-size-xs: 0.75rem;
+$font-size-sm: 0.875rem;
+$font-size-md: 1rem;
+$font-size-lg: 1.125rem;
+$font-size-xl: 1.25rem;
+$font-size-2xl: 1.5rem;
+$font-size-3xl: 1.875rem;
+$font-size-4xl: 2.25rem;
+
+// Border Radius
+$border-radius-sm: 0.125rem;
+$border-radius-md: 0.25rem;
+$border-radius-lg: 0.5rem;
+$border-radius-xl: 1rem;
+$border-radius-2xl: 1.5rem;
+$border-radius-full: 50%;
+
+// Box shadows
+$box-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+$box-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+$box-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.15);
+$box-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.2);
+
+// Color Palette
+:root {
+  --background: #FFFFFF;
+  --background-secondary: #E5E7EB;
+  --text: #111418;
+  --text-muted: #6B7280;
+  --primary: #137FEC;
+}
+
+// Font Families
+$font: 'Public Sans', sans-serif;
+
+
+// Durations
+$duration-fast: 150ms;
+$duration-medium: 200ms;
+$duration: 300ms;
+$duration-slow: 500ms;
+
+// Easings
+$easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+$easing-cubic-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+$easing-cubic-out: cubic-bezier(0.4, 0, 1, 1);
+$easing-cubic-in: cubic-bezier(0, 0, 0.2, 1);
+
+// Border
+$base-border: 1px solid;
