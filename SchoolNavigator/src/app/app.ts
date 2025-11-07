@@ -1,6 +1,5 @@
 import { Component } from '@angular/core';
-import { Map } from "@components/map/map";
-import { RouterLink, RouterLinkActive } from "@angular/router";
+import { RouterLink, RouterLinkActive, RouterOutlet } from "@angular/router";
 import { FaIconComponent } from "@fortawesome/angular-fontawesome";
 import { faCalendarAlt, faHome, faMap } from "@fortawesome/free-regular-svg-icons";
 import { faCog } from "@fortawesome/free-solid-svg-icons";
@@ -8,11 +7,11 @@ import { faCog } from "@fortawesome/free-solid-svg-icons";
 
 @Component({
   selector    : 'app-root',
-  imports     : [
-    Map,
+  imports : [
     RouterLink,
     RouterLinkActive,
     FaIconComponent,
+    RouterOutlet,
   ],
   templateUrl : './app.html',
   styleUrl    : './app.scss'

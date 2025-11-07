@@ -1,23 +1,29 @@
-import { Component, signal } from '@angular/core';
+import { Component, effect, signal } from '@angular/core';
 import { CoreShapeComponent, StageComponent } from "ng2-konva";
 import ContainerConfig = Konva.ContainerConfig;
 import Konva from "konva";
-import { Point, Storey } from '@services/map';
+import { MapService, Point, Storey } from '@services/map.service';
 import { Tooltip } from "@modules/tooltip/component/tooltip";
 import { TooltipMapDirective } from "@modules/tooltip/directive/tooltip-map";
+import { Chip } from "@modules/chip/chip";
 
 @Component({
   selector    : 'app-map',
-  imports : [
+  imports     : [
     StageComponent,
     CoreShapeComponent,
     TooltipMapDirective,
     Tooltip,
+    Chip,
   ],
   templateUrl : './map.html',
   styleUrl    : './map.scss',
 })
 export class Map {
+  protected readonly selectedStorey = signal<Storey>(Storey.THIRD);
+  protected readonly points = signal<Point[] | null>(null);
+  protected readonly selectedPoint = signal<Point | null>(null);
+
   protected readonly mapConfig : ContainerConfig = {
     width  : 800,
     height : 600,
@@ -29,21 +35,21 @@ export class Map {
     y     : 0,
   };
 
-  protected readonly selectedPoint = signal<Point | null>(null);
+  protected readonly storeys = [
+    { label : 'Piwnica', value : Storey.UNDERGROUND },
+    { label : 'Parter', value : Storey.GROUND },
+    { label : 'Pierwsze piętro', value : Storey.FIRST },
+    { label : 'Drugie piętro', value : Storey.SECOND },
+    { label : 'Trzecie piętro', value : Storey.THIRD }
+  ];
 
-  constructor() {
+
+  constructor(private mapS : MapService) {
     this.mapImage.image.src = 'assets/mapImage.png';
+    effect(() => {
+      this.selectedStorey();
+      this.points.set(this.mapS.getPointsFromStorey(this.selectedStorey()));
+      console.log(this.points());
+    });
   }
-
-  public readonly points : Point[] = Array.from({ length : 15 }, (_, i) => {
-    const x = Math.floor(Math.random() * 800) + 1;
-    const y = Math.floor(Math.random() * 600) + 1;
-    // isEmergencyExit: true dla co trzeciego punktu, reszta bez argumentu (false domyślnie)
-    if (i % 3 === 0) {
-      return new Point(i, x, y, Storey.FIRST, true);
-    } else {
-      return new Point(i, x, y, Storey.FIRST);
-    }
-  });
 }
-

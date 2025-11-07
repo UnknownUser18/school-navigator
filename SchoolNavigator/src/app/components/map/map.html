@@ -1,7 +1,14 @@
+<div class="storey-chips">
+  @for (storey of storeys; track storey.value) {
+    <chip [isSelected]="selectedStorey() === storey.value" (click)="selectedStorey.set(storey.value)">
+      {{ storey.label }}
+    </chip>
+  }
+</div>
 <ko-stage [config]="mapConfig">
   <ko-layer>
     <ko-image [config]="mapImage" />
-    @for (point of points; track point.id) {
+    @for (point of points(); track point.id) {
       <ko-circle [config]="{
         x : point.x,
         y : point.y,
