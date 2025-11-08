@@ -13,14 +13,17 @@ main {
 
 nav {
   display: flex;
-  height: 60px;
+  min-height: 60px;
   justify-content: space-between;
   align-items: center;
   border-top: i.$base-border var(--background-secondary);
-  padding: i.$padding-xs i.$padding-lg;
+  padding: i.$padding-xs i.$padding-md;
+  gap: i.$padding-sm;
 }
 
 a {
+  width: 100%;
+  height: 100%;
   display: flex;
   gap: i.$padding-sm;
   font-weight: 500;

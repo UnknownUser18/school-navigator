@@ -1,6 +1,10 @@
+<h1>Nawigacja</h1>
+<form>
+
+</form>
 <div class="storey-chips">
   @for (storey of storeys; track storey.value) {
-    <chip [isSelected]="selectedStorey() === storey.value" (click)="selectedStorey.set(storey.value)">
+    <chip [isSelected]="selectedStorey() === storey.value" matRipple matRippleColor="var(--primary-ripple)" (click)="selectedStorey.set(storey.value)" [attr.aria-label]="storey.ariaLabel">
       {{ storey.label }}
     </chip>
   }
@@ -10,8 +14,8 @@
     <ko-image [config]="mapImage" />
     @for (point of points(); track point.id) {
       <ko-circle [config]="{
-        x : point.x,
-        y : point.y,
+        x : point.x_coordinate,
+        y : point.y_coordinate,
         radius : 5,
         fill : 'red'
       }" (click)="selectedPoint.set(point)" (touchstart)="selectedPoint.set(point)" [tooltipMap]="tooltip" />

@@ -3,6 +3,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from "@angular/router";
 import { FaIconComponent } from "@fortawesome/angular-fontawesome";
 import { faCalendarAlt, faHome, faMap } from "@fortawesome/free-regular-svg-icons";
 import { faCog } from "@fortawesome/free-solid-svg-icons";
+import { MatRipple } from "@angular/material/core";
 
 
 @Component({
@@ -12,6 +13,7 @@ import { faCog } from "@fortawesome/free-solid-svg-icons";
     RouterLinkActive,
     FaIconComponent,
     RouterOutlet,
+    MatRipple,
   ],
   templateUrl : './app.html',
   styleUrl    : './app.scss'

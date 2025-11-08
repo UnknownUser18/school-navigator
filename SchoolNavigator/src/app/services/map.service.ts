@@ -1,12 +1,13 @@
 import { inject, Injectable, PLATFORM_ID } from '@angular/core';
 import { HttpClient } from "@angular/common/http";
 import { isPlatformBrowser } from "@angular/common";
+import { catchError, map, of } from "rxjs";
 
 /**
- * @enum Storey
- * Enum representing different storeys (floors) of a building.
+ * @enum Floors
+ * Enum representing different floors of a building.
  */
-export enum Storey {
+export enum Floors {
   UNDERGROUND = -1,
   GROUND,
   FIRST,
@@ -14,30 +15,75 @@ export enum Storey {
   THIRD,
 }
 
+export enum StatusCode {
+  OK = 200,
+  CREATED = 201,
+  UPDATED = 202,
+  DELETED = 203,
+  NO_CONTENT = 204,
+  BAD_REQUEST = 400,
+  UNAUTHORIZED = 401,
+  FORBIDDEN = 403,
+  NOT_FOUND = 404,
+  INTERNAL_SERVER_ERROR = 500,
+}
+
 export class Point {
   public id : number;
-  public x : number;
-  public y : number;
-  public storey : Storey;
-  public isEmergencyExit : boolean;
+  public x_coordinate : number;
+  public y_coordinate : number;
+  public floor_number : Floors;
 
-  constructor(id : number, x : number, y : number, storey : Storey, isEmergencyExit : boolean = false) {
+  constructor(id : number, x : number, y : number, floor_number : Floors) {
     this.id = id;
-    this.x = x;
-    this.y = y;
-    this.storey = storey;
-    this.isEmergencyExit = isEmergencyExit;
+    this.x_coordinate = x;
+    this.y_coordinate = y;
+    this.floor_number = floor_number;
   }
 }
 
 export interface Packet {
-  status : 'success' | 'error';
+  status_code : StatusCode;
   message : string;
   timestamp : string;
   data : unknown;
 }
 
+export class Room extends Point {
+  public room_number : string;
+
+  constructor(id : Point['id'], x : Point['x_coordinate'], y : Point['y_coordinate'], floor_number : Point['floor_number'], room_number : string) {
+    super(id, x, y, floor_number);
+    this.room_number = room_number;
+  }
+}
+
+export class Staircase extends Point {
+  public down_stair_id : Staircase['id'] | null;
+  public up_stair_id : Staircase['id'] | null;
+
+  constructor(id : Point['id'], x : Point['x_coordinate'], y : Point['y_coordinate'], floor_number : Point['floor_number'], down_stair_id : Staircase['id'] | null, up_stair_id : Staircase['id'] | null) {
+    super(id, x, y, floor_number);
+    this.down_stair_id = down_stair_id;
+    this.up_stair_id = up_stair_id;
+  }
+}
+
+export class Exit extends Point {
+  public isEmergencyExit : boolean;
+  public exit_name : string;
+
+  constructor(id : Point['id'], x : Point['x_coordinate'], y : Point['y_coordinate'], floor_number : Point['floor_number'], isEmergencyExit : boolean, exit_name : string) {
+    super(id, x, y, floor_number);
+    this.isEmergencyExit = isEmergencyExit;
+    this.exit_name = exit_name;
+  }
+}
+
+
 type CachePointsNames = 'points_underground' | 'points_ground' | 'points_first' | 'points_second' | 'points_third';
+
+type AllPoints = [Room[], Staircase[], Exit[]];
 
 
 @Injectable({
@@ -46,10 +92,26 @@ type CachePointsNames = 'points_underground' | 'points_ground' | 'points_first' 
 export class MapService {
   private platformId = inject(PLATFORM_ID);
   private http = inject(HttpClient);
+  private readonly cacheMap = new Map<Floors, CachePointsNames>([
+    [Floors.UNDERGROUND, 'points_underground'],
+    [Floors.GROUND, 'points_ground'],
+    [Floors.FIRST, 'points_first'],
+    [Floors.SECOND, 'points_second'],
+    [Floors.THIRD, 'points_third'],
+  ]);
+
   constructor() {}
 
-  private fetchPointsFromDB() {
-    this.http.get<Packet>(`points/getAll`)
+  private get fetchAllPointsFromDB() {
+    return this.http.get<Packet>(`api/points/all`).pipe(
+      map((res) => {
+        if (res.status_code !== StatusCode.OK) {
+          return null;
+        }
+        return res.data as AllPoints;
+      }),
+      catchError(() => of(null))
+    )
   }
 
   private getPointsFromCache(name : CachePointsNames) {
@@ -65,15 +127,31 @@ export class MapService {
     return JSON.parse(pointsData) as Point[];
   }
 
-  public getPointsFromStorey(storey : Storey) {
-    const map : Record<Storey, CachePointsNames> = {
-      [Storey.UNDERGROUND] : 'points_underground',
-      [Storey.GROUND]      : 'points_ground',
-      [Storey.FIRST]       : 'points_first',
-      [Storey.SECOND]      : 'points_second',
-      [Storey.THIRD]       : 'points_third',
-    };
+  public getPointsFromStorey(floors : Floors) {
+    const cacheName = this.cacheMap.get(floors);
+    if (!cacheName) {
+      return null;
+    }
 
-    return this.getPointsFromCache(map[storey]);
+    return this.getPointsFromCache(cacheName);
+  }
+
+  public get getAllPoints() {
+    return this.fetchAllPointsFromDB.pipe(
+      map((data) => {
+        if (!data) {
+          return false;
+        }
+        const { rooms, exits, stairs } = data as unknown as { rooms : Room[], exits : Exit[], stairs : Staircase[] };
+        [Floors.UNDERGROUND, Floors.GROUND, Floors.FIRST, Floors.SECOND, Floors.THIRD].forEach((floor) => {
+          const pointsOnFloor : Point[] = [];
+          rooms.filter(room => room.floor_number === floor).forEach(room => pointsOnFloor.push(room));
+          stairs.filter(stairs => stairs.floor_number === floor).forEach(stairs => pointsOnFloor.push(stairs));
+          exits.filter(exit => exit.floor_number === floor).forEach(exit => pointsOnFloor.push(exit));
+          localStorage.setItem(this.cacheMap.get(floor)!, JSON.stringify(pointsOnFloor));
+        });
+        return true;
+      })
+    );
   }
 }
