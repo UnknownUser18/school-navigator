@@ -4,7 +4,7 @@ import { Home } from "@components/home/home";
 export const routes: Routes = [
   {
     path : 'map',
-    loadComponent : () => import('@components/map/map').then(m => m.Map)
+    loadComponent : () => import('@components/map/map').then(m => m.MapComponent)
   },
   {
     path: '',

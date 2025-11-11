@@ -38,7 +38,9 @@ testem.log
 /typings
 
 # Mobile
-/android
+/android/.gradle
+/android/build/
+/android/app/build
 
 # System files
 .DS_Store

@@ -2,6 +2,7 @@ import { inject, Injectable, PLATFORM_ID } from '@angular/core';
 import { HttpClient } from "@angular/common/http";
 import { isPlatformBrowser } from "@angular/common";
 import { catchError, map, of } from "rxjs";
+import { environment } from "../../environments/environment";
 
 /**
  * @enum Floors
@@ -103,7 +104,7 @@ export class MapService {
   constructor() {}
 
   private get fetchAllPointsFromDB() {
-    return this.http.get<Packet>(`api/points/all`).pipe(
+    return this.http.get<Packet>(`${ environment.apiUrl }/api/points/all`).pipe(
       map((res) => {
         if (res.status_code !== StatusCode.OK) {
           return null;

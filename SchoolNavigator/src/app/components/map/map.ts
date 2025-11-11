@@ -34,7 +34,7 @@ type Suggestion = {
   templateUrl : './map.html',
   styleUrl    : './map.scss',
 })
-export class Map {
+export class MapComponent {
   protected readonly selectedStorey = signal<Floors>(Floors.THIRD);
   protected readonly points = signal<Point[] | null>(null);
   protected readonly selectedPoint = signal<Point | null>(null);
@@ -80,10 +80,10 @@ export class Map {
 
     effect(() => {
       this.selectedStorey();
+      // Use preloaded image from cache
       this.mapImage.image.src = `assets/maps/${ mapImageRecord[this.selectedStorey()] }.png`;
 
       const pointsFromStorey = this.mapS.getPointsFromStorey(this.selectedStorey());
-
       // First get from cache or fetch from DB if not in cache
       this.points.set(pointsFromStorey);
 

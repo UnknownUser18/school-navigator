@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">School Navigator</string>
+    <string name="title_activity_main">School Navigator</string>
+    <string name="package_name">com.navigator.school</string>
+    <string name="custom_url_scheme">com.navigator.school</string>
+</resources>
