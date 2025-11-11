@@ -1,29 +1,93 @@
 <h1>Nawigacja</h1>
-<form>
-
+<form [formGroup]="navigationForm">
+  <label>
+    Punkt startowy
+    <div [class.error]="navigationForm.get('destinationPlace')?.invalid && navigationForm.get('destinationPlace')?.touched">
+      <fa-icon [icon]="faSearch" />
+      <input type="text" placeholder="np. Sala 101" formControlName="startingPlace" name="startPlace" required (input)="getStartingPlaceSuggestions()">
+    </div>
+  </label>
+  <label>
+    Punkt docelowy
+    <div [class.error]="navigationForm.get('startingPlace')?.invalid && navigationForm.get('startingPlace')?.touched">
+      <fa-icon [icon]="faLocationDot" />
+      <input type="text" placeholder="np. Toaleta" formControlName="destinationPlace" name="endPlace" required (input)="getDestinationPlaceSuggestions()">
+    </div>
+  </label>
 </form>
 <div class="storey-chips">
   @for (storey of storeys; track storey.value) {
-    <chip [isSelected]="selectedStorey() === storey.value" matRipple matRippleColor="var(--primary-ripple)" (click)="selectedStorey.set(storey.value)" [attr.aria-label]="storey.ariaLabel">
+    <chip [isSelected]="selectedStorey() === storey.value" (click)="selectedStorey.set(storey.value)" [attr.aria-label]="storey.ariaLabel">
       {{ storey.label }}
     </chip>
   }
 </div>
-<ko-stage [config]="mapConfig">
-  <ko-layer>
-    <ko-image [config]="mapImage" />
-    @for (point of points(); track point.id) {
-      <ko-circle [config]="{
+<div class="map-container">
+  <ko-stage [config]="mapConfig">
+    <ko-layer>
+      <ko-image [config]="mapImage" />
+      @for (point of points(); track point.id) {
+        <ko-circle [config]="{
         x : point.x_coordinate,
         y : point.y_coordinate,
         radius : 5,
         fill : 'red'
       }" (click)="selectedPoint.set(point)" (touchstart)="selectedPoint.set(point)" [tooltipMap]="tooltip" />
-    }
-  </ko-layer>
-</ko-stage>
+      }
+    </ko-layer>
+  </ko-stage>
+</div>
+
 
 <tooltip #tooltip>
   @let point = selectedPoint();
   <p>Punkt o id: {{ point?.id }}</p>
 </tooltip>
+
+@if (startingPlaceSuggestions()) {
+  <div class="suggestions-backdrop starting" (click)="clearStartingPlaceSuggestions()">
+    <ul>
+      @for (suggestion of startingPlaceSuggestions(); track $index) {
+        <li (click)="selectStartingPlaceSuggestion(suggestion)" matRipple [matRippleColor]="'var(--background-ripple)'">
+          <b>@switch (suggestion.type) {
+            @case ('room') {
+              Sala
+            }
+            @case ('exit') {
+              Wyjście
+            }
+            @case ('staircase') {
+              Schody
+            }
+          }</b>
+          <p>{{ suggestion.name }}</p>
+          <i>{{ suggestion.description }}</i>
+        </li>
+      }
+    </ul>
+  </div>
+}
+
+@if (destinationPlaceSuggestions()) {
+  <div class="suggestions-backdrop destination" (click)="clearDestinationPlaceSuggestions()">
+    <ul>
+      @for (suggestion of destinationPlaceSuggestions(); track $index) {
+        <li (click)="selectDestinationPlaceSuggestion(suggestion)" matRipple [matRippleColor]="'var(--background-ripple)'">
+          <b>@switch (suggestion.type) {
+            @case ('room') {
+              Sala
+            }
+            @case ('exit') {
+              Wyjście
+            }
+            @case ('staircase') {
+              Schody
+            }
+          }</b>
+          <p>{{ suggestion.name }}</p>
+          <i>{{ suggestion.description }}</i>
+        </li>
+      }
+    </ul>
+  </div>
+}

@@ -45,12 +45,15 @@ $box-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.2);
 :root {
   --background: #FFFFFF;
   --background-secondary: #E5E7EB;
+  --background-tertiary: #F6F7F8;
+  --background-divider: #E0E0E0;
   --text: #111418;
   --text-muted: #6B7280;
   --primary: #137FEC;
   --primary-container: #137FEC33;
   --primary-ripple: #137FEC1A;
   --background-ripple: #1114180A;
+  --error: #FF4D4F;
 }
 
 // Font Families

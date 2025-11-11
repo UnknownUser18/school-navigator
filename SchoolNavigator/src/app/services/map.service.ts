@@ -33,12 +33,14 @@ export class Point {
   public x_coordinate : number;
   public y_coordinate : number;
   public floor_number : Floors;
+  public description : string;
 
-  constructor(id : number, x : number, y : number, floor_number : Floors) {
+  constructor(id : number, x : number, y : number, floor_number : Floors, description? : string) {
     this.id = id;
     this.x_coordinate = x;
     this.y_coordinate = y;
     this.floor_number = floor_number;
+    this.description = description || '';
   }
 }
 
@@ -52,8 +54,8 @@ export interface Packet {
 export class Room extends Point {
   public room_number : string;
 
-  constructor(id : Point['id'], x : Point['x_coordinate'], y : Point['y_coordinate'], floor_number : Point['floor_number'], room_number : string) {
-    super(id, x, y, floor_number);
+  constructor(id : Point['id'], x : Point['x_coordinate'], y : Point['y_coordinate'], floor_number : Point['floor_number'], room_number : string, description? : string) {
+    super(id, x, y, floor_number, description);
     this.room_number = room_number;
   }
 }
@@ -62,8 +64,8 @@ export class Staircase extends Point {
   public down_stair_id : Staircase['id'] | null;
   public up_stair_id : Staircase['id'] | null;
 
-  constructor(id : Point['id'], x : Point['x_coordinate'], y : Point['y_coordinate'], floor_number : Point['floor_number'], down_stair_id : Staircase['id'] | null, up_stair_id : Staircase['id'] | null) {
-    super(id, x, y, floor_number);
+  constructor(id : Point['id'], x : Point['x_coordinate'], y : Point['y_coordinate'], floor_number : Point['floor_number'], down_stair_id : Staircase['id'] | null, up_stair_id : Staircase['id'] | null, description? : string) {
+    super(id, x, y, floor_number, description);
     this.down_stair_id = down_stair_id;
     this.up_stair_id = up_stair_id;
   }
@@ -73,18 +75,16 @@ export class Exit extends Point {
   public isEmergencyExit : boolean;
   public exit_name : string;
 
-  constructor(id : Point['id'], x : Point['x_coordinate'], y : Point['y_coordinate'], floor_number : Point['floor_number'], isEmergencyExit : boolean, exit_name : string) {
-    super(id, x, y, floor_number);
+  constructor(id : Point['id'], x : Point['x_coordinate'], y : Point['y_coordinate'], floor_number : Point['floor_number'], isEmergencyExit : boolean, exit_name : string, description? : string) {
+    super(id, x, y, floor_number, description);
     this.isEmergencyExit = isEmergencyExit;
     this.exit_name = exit_name;
   }
 }
 
-
 type CachePointsNames = 'points_underground' | 'points_ground' | 'points_first' | 'points_second' | 'points_third';
 
-type AllPoints = [Room[], Staircase[], Exit[]];
-
+type AllPoints = (Room | Staircase | Exit)[];
 
 @Injectable({
   providedIn : 'root',
@@ -108,7 +108,7 @@ export class MapService {
         if (res.status_code !== StatusCode.OK) {
           return null;
         }
-        return res.data as AllPoints;
+        return res.data as [Room[], Staircase[], Exit[]];
       }),
       catchError(() => of(null))
     )
@@ -124,7 +124,17 @@ export class MapService {
       return null;
     }
 
-    return JSON.parse(pointsData) as Point[];
+    const pointsArray = JSON.parse(pointsData) as AllPoints;
+
+    return pointsArray.map(point => {
+      if ('room_number' in point) {
+        return new Room(point.id, point.x_coordinate, point.y_coordinate, point.floor_number, point.room_number, point.description);
+      } else if ('exit_name' in point) {
+        return new Exit(point.id, point.x_coordinate, point.y_coordinate, point.floor_number, (point as any).isEmergencyExit, (point as any).exit_name, point.description);
+      } else {
+        return new Staircase(point.id, point.x_coordinate, point.y_coordinate, point.floor_number, (point as any).down_stair_id, (point as any).up_stair_id, point.description);
+      }
+    });
   }
 
   public getPointsFromStorey(floors : Floors) {
@@ -153,5 +163,26 @@ export class MapService {
         return true;
       })
     );
+  }
+
+  public getPlaceSuggestions(query : string) {
+
+    const points = [Floors.UNDERGROUND, Floors.GROUND, Floors.FIRST, Floors.SECOND, Floors.THIRD].flatMap((floor) => {
+      const cachedPoints = this.getPointsFromCache(this.cacheMap.get(floor)!);
+      if (!cachedPoints) {
+        return [];
+      }
+      return cachedPoints;
+    });
+
+
+    return points.filter((point) => {
+      if (point instanceof Room) {
+        return point.room_number.toLowerCase().includes(query.toLowerCase());
+      } else if (point instanceof Exit) {
+        return point.exit_name.toLowerCase().includes(query.toLowerCase());
+      }
+      return point instanceof Staircase && (`Schody ${ point.id }`.toLowerCase().includes(query.toLowerCase()));
+    }) as AllPoints;
   }
 }
