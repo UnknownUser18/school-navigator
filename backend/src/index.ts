@@ -19,10 +19,6 @@ app.use(morgan(':method :url :status :response-time ms', {
 
 app.use('/api', router);
 
-logger.info('Environment: ', process.env);
-
 app.listen(process.env.PORT, () => {
   logger.info(`Server is running on port ${ process.env.PORT }`);
 })
-
-export default app;

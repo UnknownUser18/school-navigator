@@ -23,7 +23,7 @@
   }
 </div>
 <div class="map-container">
-  <ko-stage [config]="mapConfig">
+  <ko-stage [config]="mapConfig" (wheel)="mouseZoom($event)" #map (touchstart)="onPinchStart($event)" (touchmove)="onPinchMove($event)" (touchend)="onPinchEnd($event)">
     <ko-layer>
       <ko-image [config]="mapImage" />
       @for (point of points(); track point.id) {

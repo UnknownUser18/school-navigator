@@ -68,9 +68,3 @@ export async function executeQuery(query : string, params? : {}) : Promise<Query
     return error as QueryError; // Return the error as QueryError type
   }
 }
-
-export function isQuerySuccessful(result : QueryResult | Error | null) : boolean {
-  return result !== null && !(result instanceof Error);
-}
-
-export default pool;

@@ -1,5 +1,5 @@
-import { Component, effect, signal } from '@angular/core';
-import { CoreShapeComponent, StageComponent } from "ng2-konva";
+import { Component, effect, signal, viewChild } from '@angular/core';
+import { CoreShapeComponent, NgKonvaEventObject, StageComponent } from "ng2-konva";
 import Konva from "konva";
 import { Exit, Floors, MapService, Point, Room } from '@services/map.service';
 import { Tooltip } from "@modules/tooltip/component/tooltip";
@@ -35,6 +35,11 @@ type Suggestion = {
   styleUrl    : './map.scss',
 })
 export class MapComponent {
+  private lastPinchDistance : number | null = null;
+  private lastPinchScale : number | null = null;
+
+  protected readonly map = viewChild.required<StageComponent>('map');
+
   protected readonly selectedStorey = signal<Floors>(Floors.THIRD);
   protected readonly points = signal<Point[] | null>(null);
   protected readonly selectedPoint = signal<Point | null>(null);
@@ -50,8 +55,9 @@ export class MapComponent {
   });
 
   protected readonly mapConfig : ContainerConfig = {
-    width  : 350,
-    height : 300,
+    width     : 350,
+    height    : 300,
+    draggable : true,
   };
 
   protected readonly mapImage = {
@@ -96,6 +102,30 @@ export class MapComponent {
     });
   }
 
+  private changeScale(direction : -1 | 1) {
+    const scaleBy = 1.05;
+
+    const oldScale = this.map().getStage().scaleX();
+    const pointer = this.map().getStage().getPointerPosition()!;
+
+    const mousePointTo = {
+      x : (pointer.x - this.map().getStage().x()) / oldScale,
+      y : (pointer.y - this.map().getStage().y()) / oldScale,
+    };
+
+    // Limit zoom scale
+    let newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
+    newScale = Math.max(0.5, Math.min(4, newScale));
+
+    this.map().getStage().scale({ x : newScale, y : newScale });
+
+    const newPos = {
+      x : pointer.x - mousePointTo.x * newScale,
+      y : pointer.y - mousePointTo.y * newScale,
+    };
+    this.map().getStage().position(newPos);
+  }
+
   private getSuggestions(query : string) : Suggestion[] {
     return this.mapS.getPlaceSuggestions(query).map(point => {
       let name = '';
@@ -126,7 +156,7 @@ export class MapComponent {
     const destinationPlaceControl = this.navigationForm.get('destinationPlace');
 
 
-    if (this.getStartingPlace.trim() === this.getDestinationPlace.trim()) {
+    if (this.getStartingPlace.trim() === this.getDestinationPlace.trim() && this.getStartingPlace.trim() !== '') {
       startingPlaceControl?.setErrors({ sameAsDestination : true });
       destinationPlaceControl?.setErrors({ sameAsStarting : true });
     } else {
@@ -137,6 +167,13 @@ export class MapComponent {
         destinationPlaceControl.updateValueAndValidity({ onlySelf : true, emitEvent : false });
       }
     }
+  }
+
+  private getPinchDistance(event : TouchEvent) : number {
+    const [touch1, touch2] = [event.touches[0], event.touches[1]];
+    const dx = touch2.clientX - touch1.clientX;
+    const dy = touch2.clientY - touch1.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
   }
 
   protected getDestinationPlaceSuggestions() {
@@ -185,4 +222,37 @@ export class MapComponent {
   protected clearDestinationPlaceSuggestions() {
     this.destinationPlaceSuggestions.set(null);
   }
+
+  protected mouseZoom(ngEvent : NgKonvaEventObject<WheelEvent>) {
+    ngEvent.event.evt.preventDefault();
+    const direction = ngEvent.event.evt.deltaY > 0 ? -1 : 1;
+    this.changeScale(direction as -1 | 1);
+  }
+
+  protected onPinchStart(event : NgKonvaEventObject<TouchEvent>) {
+    if (event.event.evt.touches.length === 2) {
+      this.lastPinchDistance = this.getPinchDistance(event.event.evt);
+      this.lastPinchScale = this.map().getStage().scaleX();
+    }
+  }
+
+  protected onPinchMove(event : NgKonvaEventObject<TouchEvent>) {
+    if (event.event.evt.touches.length === 2 && this.lastPinchDistance !== null && this.lastPinchScale !== null) {
+      event.event.evt.preventDefault();
+      const newDist = this.getPinchDistance(event.event.evt);
+      let scale = (newDist / this.lastPinchDistance) * this.lastPinchScale;
+      scale = Math.max(0.5, Math.min(4, scale));
+      this.map().getStage().scale({ x : scale, y : scale });
+    }
+  }
+
+  protected onPinchEnd(event : NgKonvaEventObject<TouchEvent>) {
+    if (event.event.evt.touches.length < 2) {
+      this.lastPinchDistance = null;
+      this.lastPinchScale = null;
+    }
+  }
+
+
+
 }
