@@ -75,7 +75,7 @@
         <h3>
           @switch (maneuver.instruction) {
             @case ('straight') {
-              Idź prosto {{ maneuver.distance }} metrów
+              Idź prosto {{ maneuver.distance.toFixed(2) }} metrów
             }
             @case ('down') {
               Zejdź o piętro niżej

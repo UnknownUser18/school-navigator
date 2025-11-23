@@ -41,7 +41,7 @@ export class MapComponent {
 
   protected readonly map = viewChild.required<StageComponent>('map');
 
-  protected readonly selectedStorey = signal<Floors>(Floors.THIRD);
+  protected readonly selectedStorey = signal<Floors>(Floors.FIRST);
   protected readonly points = signal<Point[] | null>(null);
   protected readonly selectedPoint = signal<Point | null>(null);
   protected readonly startingPlaceSuggestions = signal<Suggestion[] | null>(null);
@@ -54,6 +54,7 @@ export class MapComponent {
   protected readonly faArrowUp = faArrowUp;
   protected readonly faStairs = faStairs;
   protected readonly faArrowLeft = faArrowLeft;
+  protected readonly faFlagCheckered = faFlagCheckered;
   protected readonly faArrowRight = faArrowRight;
 
   protected navigationForm = new FormGroup({
@@ -306,11 +307,18 @@ export class MapComponent {
 
 
     this.navigationS.navigate(startPoint, endPoint).subscribe((path) => {
+      if (!path) {
+        this.path.set(null);
+        this.maneuvers.set(null);
+        return;
+      }
+
       this.maneuvers.set(path);
+
       this.path.set(path ? path.flatMap(p => [p.point.x_coordinate, p.point.y_coordinate]) : null);
+      console.log(this.path())
     });
 
   }
 
-  protected readonly faFlagCheckered = faFlagCheckered;
 }
