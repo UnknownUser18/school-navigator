@@ -6,10 +6,11 @@ import { Tooltip } from "@modules/tooltip/component/tooltip";
 import { TooltipMapDirective } from "@modules/tooltip/directive/tooltip-map";
 import { Chip } from "@modules/chip/chip";
 import { FaIconComponent } from "@fortawesome/angular-fontawesome";
-import { faLocationDot, faSearch } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faArrowRight, faArrowUp, faFlagCheckered, faLocationDot, faSearch, faStairs } from "@fortawesome/free-solid-svg-icons";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatRipple } from "@angular/material/core";
 import ContainerConfig = Konva.ContainerConfig;
+import { Maneuver, Navigation } from "@services/navigation";
 
 type Suggestion = {
   type : 'room' | 'exit' | 'staircase';
@@ -45,9 +46,15 @@ export class MapComponent {
   protected readonly selectedPoint = signal<Point | null>(null);
   protected readonly startingPlaceSuggestions = signal<Suggestion[] | null>(null);
   protected readonly destinationPlaceSuggestions = signal<Suggestion[] | null>(null);
+  protected readonly path = signal<number[] | null>(null);
+  protected readonly maneuvers = signal<Maneuver[] | null>(null);
 
   protected readonly faSearch = faSearch;
   protected readonly faLocationDot = faLocationDot;
+  protected readonly faArrowUp = faArrowUp;
+  protected readonly faStairs = faStairs;
+  protected readonly faArrowLeft = faArrowLeft;
+  protected readonly faArrowRight = faArrowRight;
 
   protected navigationForm = new FormGroup({
     startingPlace    : new FormControl('', [Validators.required]),
@@ -74,8 +81,7 @@ export class MapComponent {
     { label : 'Piętro 3', value : Floors.THIRD, ariaLabel : 'Przejdź do trzeciego piętra' },
   ];
 
-
-  constructor(private mapS : MapService) {
+  constructor(private mapS : MapService, private navigationS : Navigation) {
     const mapImageRecord : Record<Floors, string> = {
       [Floors.UNDERGROUND] : 'Underground',
       [Floors.GROUND]      : 'Ground',
@@ -126,13 +132,34 @@ export class MapComponent {
     this.map().getStage().position(newPos);
   }
 
-  private getSuggestions(query : string) : Suggestion[] {
-    return this.mapS.getPlaceSuggestions(query).map(point => {
+  private getFlagsFromQuery(query : string) : 'room' | 'connector' | 'exit' | null {
+    const match = new RegExp('^(sala|wyjście|klatka schodowa)\\s+', 'i').exec(query);
+    if (!match) return null;
+
+    const flag = match[1].toLowerCase();
+
+    if (flag === 'sala') {
+      return 'room';
+    } else if (flag === 'wyjście') {
+      return 'exit';
+    } else if (flag === 'klatka schodowa') {
+      return 'connector';
+    }
+    return null;
+  }
+
+  private getSuggestions(query : string, flags : 'room' | 'connector' | 'exit' | null) : Suggestion[] {
+    const cleanedQuery = query.replace(/^(sala|wyjście|klatka schodowa)\s+/i, '').trim();
+    return this.mapS.getPlaceSuggestions(cleanedQuery).map(point => {
       let name = '';
-      if (point instanceof Room) {
+      if (point instanceof Room && (flags === null || flags === 'room')) {
         name = point.room_number;
-      } else if (point instanceof Exit) {
+      } else if (point instanceof Exit && (flags === null || flags === 'exit')) {
         name = point.exit_name;
+      } else if (!(point instanceof Room) && !(point instanceof Exit) && (flags === null || flags === 'connector')) {
+        name = `Klatka schodowa ${ point.id }`;
+      } else {
+        name = '';
       }
       return {
         type        : point instanceof Room ? 'room' : point instanceof Exit ? 'exit' : 'staircase',
@@ -184,7 +211,7 @@ export class MapComponent {
 
     this.setInputsErrorState();
 
-    const suggestions = this.getSuggestions(this.getDestinationPlace);
+    const suggestions = this.getSuggestions(this.getDestinationPlace, this.getFlagsFromQuery(this.getDestinationPlace));
     this.destinationPlaceSuggestions.set(suggestions);
   }
 
@@ -195,7 +222,7 @@ export class MapComponent {
     }
     this.setInputsErrorState();
 
-    const suggestions = this.getSuggestions(this.getStartingPlace);
+    const suggestions = this.getSuggestions(this.getStartingPlace, this.getFlagsFromQuery(this.getStartingPlace));
     this.startingPlaceSuggestions.set(suggestions);
   }
 
@@ -203,6 +230,7 @@ export class MapComponent {
     this.navigationForm.get('startingPlace')?.setValue(suggestion.name);
     setTimeout(() => {
       this.startingPlaceSuggestions.set(null);
+      this.checkIfCanNavigate();
     }, 150);
     this.setInputsErrorState();
   }
@@ -211,6 +239,7 @@ export class MapComponent {
     this.navigationForm.get('destinationPlace')?.setValue(suggestion.name);
     setTimeout(() => {
       this.destinationPlaceSuggestions.set(null);
+      this.checkIfCanNavigate();
     }, 150);
     this.setInputsErrorState();
   }
@@ -223,10 +252,17 @@ export class MapComponent {
     this.destinationPlaceSuggestions.set(null);
   }
 
-  protected mouseZoom(ngEvent : NgKonvaEventObject<WheelEvent>) {
-    ngEvent.event.evt.preventDefault();
-    const direction = ngEvent.event.evt.deltaY > 0 ? -1 : 1;
-    this.changeScale(direction as -1 | 1);
+  protected mouseZoom(ngEvent : NgKonvaEventObject<WheelEvent> | WheelEvent) {
+
+    let direction : -1 | 1;
+    if ('event' in ngEvent) {
+      ngEvent.event.evt.preventDefault();
+      direction = ngEvent.event.evt.deltaY > 0 ? -1 : 1;
+    } else {
+      ngEvent.preventDefault();
+      direction = ngEvent.deltaY > 0 ? -1 : 1;
+    }
+    this.changeScale(direction);
   }
 
   protected onPinchStart(event : NgKonvaEventObject<TouchEvent>) {
@@ -253,6 +289,28 @@ export class MapComponent {
     }
   }
 
+  protected checkIfCanNavigate() {
+    const { startingPlace, destinationPlace } = this.navigationForm.value;
+
+    if (!startingPlace || !destinationPlace)
+      return;
+
+    if (startingPlace.trim() === destinationPlace.trim())
+      return;
+
+    const startPoint = this.mapS.getPointFromQuery(startingPlace);
+    const endPoint = this.mapS.getPointFromQuery(destinationPlace);
+
+    if (!startPoint || !endPoint)
+      return;
 
 
+    this.navigationS.navigate(startPoint, endPoint).subscribe((path) => {
+      this.maneuvers.set(path);
+      this.path.set(path ? path.flatMap(p => [p.point.x_coordinate, p.point.y_coordinate]) : null);
+    });
+
+  }
+
+  protected readonly faFlagCheckered = faFlagCheckered;
 }

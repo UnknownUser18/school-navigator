@@ -4,14 +4,14 @@
     Punkt startowy
     <div [class.error]="navigationForm.get('destinationPlace')?.invalid && navigationForm.get('destinationPlace')?.touched">
       <fa-icon [icon]="faSearch" />
-      <input type="text" placeholder="np. Sala 101" formControlName="startingPlace" name="startPlace" required (input)="getStartingPlaceSuggestions()">
+      <input type="text" placeholder="np. Sala 101" formControlName="startingPlace" name="startPlace" required (input)="getStartingPlaceSuggestions()" (blur)="checkIfCanNavigate()">
     </div>
   </label>
   <label>
     Punkt docelowy
     <div [class.error]="navigationForm.get('startingPlace')?.invalid && navigationForm.get('startingPlace')?.touched">
       <fa-icon [icon]="faLocationDot" />
-      <input type="text" placeholder="np. Toaleta" formControlName="destinationPlace" name="endPlace" required (input)="getDestinationPlaceSuggestions()">
+      <input type="text" placeholder="np. Toaleta" formControlName="destinationPlace" name="endPlace" required (input)="getDestinationPlaceSuggestions()" (blur)="checkIfCanNavigate()">
     </div>
   </label>
 </form>
@@ -26,17 +26,83 @@
   <ko-stage [config]="mapConfig" (wheel)="mouseZoom($event)" #map (touchstart)="onPinchStart($event)" (touchmove)="onPinchMove($event)" (touchend)="onPinchEnd($event)">
     <ko-layer>
       <ko-image [config]="mapImage" />
+      @let navigationPath = path();
+      @if (navigationPath && navigationPath.length > 1) {
+        <ko-line [config]="{
+          points : navigationPath,
+          stroke : 'blue',
+          strokeWidth : 4,
+          lineCap : 'round',
+          lineJoin : 'round',
+          tension : 0.5
+        }" />
+      }
       @for (point of points(); track point.id) {
         <ko-circle [config]="{
         x : point.x_coordinate,
         y : point.y_coordinate,
-        radius : 5,
+        radius : 8,
         fill : 'red'
       }" (click)="selectedPoint.set(point)" (touchstart)="selectedPoint.set(point)" [tooltipMap]="tooltip" />
       }
     </ko-layer>
   </ko-stage>
 </div>
+
+@if (maneuvers()) {
+  <ul class="maneuver-list">
+    @for (maneuver of maneuvers(); track $index) {
+      <li>
+        <div class="icon">
+          @switch (maneuver.instruction) {
+            @case ('straight') {
+              <fa-icon [icon]="faArrowUp" />
+            }
+            @case ('down') {
+              <fa-icon [icon]="faStairs" />
+            }
+            @case ('up') {
+              <fa-icon [icon]="faStairs" />
+            }
+            @case ('left') {
+              <fa-icon [icon]="faArrowLeft" />
+            }
+            @case ('right') {
+              <fa-icon [icon]="faArrowRight" />
+            }
+          }
+        </div>
+        <h3>
+          @switch (maneuver.instruction) {
+            @case ('straight') {
+              Idź prosto {{ maneuver.distance }} metrów
+            }
+            @case ('down') {
+              Zejdź o piętro niżej
+            }
+            @case ('up') {
+              Wejdź o piętro wyżej
+            }
+            @case ('left') {
+              Skręć w lewo
+            }
+            @case ('right') {
+              Skręć w prawo
+            }
+          }
+        </h3>
+      </li>
+      @if ($last) {
+        <li>
+          <div class="icon">
+            <fa-icon [icon]="faFlagCheckered" />
+          </div>
+          <h3>Dotarłeś do celu!</h3>
+        </li>
+      }
+    }
+  </ul>
+}
 
 
 <tooltip #tooltip>

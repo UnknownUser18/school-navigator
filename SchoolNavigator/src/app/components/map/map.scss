@@ -30,9 +30,9 @@ form {
   margin: i.$margin-md 0;
   padding: 0 i.$padding-sm;
   display: flex;
-  align-items: center;
   gap: i.$padding-sm;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .error-message {
@@ -148,4 +148,34 @@ label {
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.maneuver-list {
+  margin: i.$margin-md 0;
+  max-height: 200px;
+  overflow: auto;
+  display: flex;
+  gap: i.$padding-sm;
+  flex-direction: column;
+
+  li {
+    padding: i.$padding-sm i.$padding-md;
+    display: flex;
+    gap: i.$padding-md;
+    align-items: center;
+    border-radius: i.$border-radius-md;
+    background-color: var(--maneuver-background);
+  }
+
+  .icon {
+    padding: i.$padding-sm;
+    border-radius: i.$border-radius-full;
+    background-color: #137FEC33;
+    color: var(--primary);
+  }
+
+  h3 {
+    font-size: i.$font-size-md;
+    font-weight: 500;
+  }
 }
