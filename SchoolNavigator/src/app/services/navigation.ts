@@ -34,6 +34,32 @@ export class Navigation {
     return Math.floor(coord / Navigation.GRID_SCALE);
   }
 
+  /**
+   * Zwraca karę za bliskość ścian (skalowaną, ale ograniczoną do maxPenalty).
+   */
+  private wallPenalty(grid : number[][], x : number, y : number) : number {
+    const penaltyPerWall = 0.5;
+    const maxPenalty = 2;
+    const rows = grid.length;
+    const cols = grid[0].length;
+
+    // Szukaj najbliższej ściany w promieniu 1, 2, 3, ... aż do max(rows, cols)
+    for (let radius = 1 ; radius < Math.max(rows, cols) ; radius++) {
+      for (let dx = -radius ; dx <= radius ; dx++) {
+        for (let dy = -radius ; dy <= radius ; dy++) {
+          if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue; // tylko krawędź pierścienia
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= cols || ny >= rows) continue;
+          if (grid[ny][nx] !== 0) {
+            // Kara maleje wraz z odległością od ściany
+            return Math.max(maxPenalty - (radius - 1) * penaltyPerWall, 0);
+          }
+        }
+      }
+    }
+    return 0;
+  }
+
   private aStar(grid : number[][], start : GridCoordinate, end : GridCoordinate) : GridCoordinate[] | null {
     type Node = { x : number, y : number, g : number, f : number, parent? : Node };
     const rows = grid.length;
@@ -72,7 +98,9 @@ export class Navigation {
         if (!isWalkable(neighbor.x, neighbor.y) || closed.has(nodeKey(neighbor.x, neighbor.y))) {
           continue;
         }
-        const gScore = current.g + 1;
+        // Dodaj karę za bliskość ścian
+        const penalty = this.wallPenalty(grid, neighbor.x, neighbor.y);
+        const gScore = current.g + 1 + penalty;
         const key = nodeKey(neighbor.x, neighbor.y);
         let neighborNode = openMap.get(key);
         if (!neighborNode) {
