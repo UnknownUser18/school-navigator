@@ -254,49 +254,44 @@ export class Navigation {
     const chain : Connector[] = [];
     let currentFloor = from.floor_number;
 
-    let nearest : Connector | null = null;
+    // 1. Znajdź najbliższy connector na piętrze startowym
+    const startConnectors = connectorsByFloor.get(currentFloor);
+    if (!startConnectors || startConnectors.length === 0) return null;
+    let nearestConnector : Connector | null = null;
     let minDist = Infinity;
+    for (const c of startConnectors) {
+      const dx = c.x_coordinate - from.x_coordinate;
+      const dy = c.y_coordinate - from.y_coordinate;
+      const dist = dx * dx + dy * dy;
+      if (dist < minDist) {
+        minDist = dist;
+        nearestConnector = c;
+      }
+    }
+    if (!nearestConnector) return null;
+    chain.push(nearestConnector);
+    currentFloor += step;
+
+    // 2. Przechodź przez connectory na kolejnych piętrach
     while (currentFloor !== to.floor_number + step) {
-      const startConnectors = connectorsByFloor.get(currentFloor) || [];
-      for (const c of startConnectors) {
-        if ((step === 1 && c.up_stair_id) || (step === -1 && c.down_stair_id)) {
-          const dx = c.x_coordinate - from.x_coordinate;
-          const dy = c.y_coordinate - from.y_coordinate;
-          const dist = dx * dx + dy * dy;
-          if (dist < minDist) {
-            minDist = dist;
-            nearest = c;
-          }
+      const floorConnectors = connectorsByFloor.get(currentFloor);
+      if (!floorConnectors || floorConnectors.length === 0) return null;
+      // Znajdź powiązany connector na bieżącym piętrze
+      let nextConnector : Connector | null = null;
+      for (const c of floorConnectors) {
+        if (step === 1 && 'down_stair_id' in nearestConnector! && c.down_stair_id === nearestConnector!.id) {
+          nextConnector = c;
+          break;
+        } else if (step === -1 && 'up_stair_id' in nearestConnector! && c.up_stair_id === nearestConnector!.id) {
+          nextConnector = c;
+          break;
         }
       }
-      if (!nearest) return null;
-      // Find connector to the down/up stair on the same floor as the connector found
-      if (currentFloor !== from.floor_number && chain.length > 0 && currentFloor !== to.floor_number + step) {
-        const floorConnectors = connectorsByFloor.get(currentFloor) || [];
-        let linkerConnector : Connector | null = null;
-        let dist = Infinity;
-
-        for (const c of floorConnectors) {
-          if ((step === 1 && c.down_stair_id) || (step === -1 && c.up_stair_id)) {
-            const dx = c.x_coordinate - chain[chain.length - 1].x_coordinate;
-            const dy = c.y_coordinate - chain[chain.length - 1].y_coordinate;
-            const currentDist = dx * dx + dy * dy;
-            if (currentDist < dist) {
-              dist = currentDist;
-              linkerConnector = c;
-            }
-          } // istnieje połączenie w dół/w górę (rewers)
-        }
-        if (!linkerConnector) return null;
-
-        chain.push(linkerConnector);
-      }
-
-      chain.push(nearest);
-      minDist = Infinity;
+      if (!nextConnector) return null;
+      chain.push(nextConnector);
+      nearestConnector = nextConnector;
       currentFloor += step;
     }
-    chain.pop(); // usuń ostatni connector, bo to już piętro docelowe
     return chain;
   }
 
