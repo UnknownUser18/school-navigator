@@ -119,65 +119,44 @@ export class Navigation {
 
   private generateManeuvers(path : Point[]) : Maneuver[] {
     if (path.length < 2) return [];
-
     const maneuvers : Maneuver[] = [];
-
-    // Prosta implementacja generowania manewrów bez optymalizacji
     for (let i = 1 ; i < path.length ; i++) {
       const prev = path[i - 1];
       const curr = path[i];
-
       if (curr.floor_number !== prev.floor_number) {
         throw new Error("Not implemented: multi-floor maneuvers");
       }
-
       const dx = curr.x_coordinate - prev.x_coordinate;
       const dy = curr.y_coordinate - prev.y_coordinate;
       const distance = Math.sqrt(dx * dx + dy * dy) / 100;
-
-      const dir : [number, number] = [Math.sign(dx), Math.sign(dy)];
-
-      // Determine turn direction
       let instruction : 'straight' | 'left' | 'right' = 'straight';
       if (i > 1) {
         const prevPrev = path[i - 2];
         const pdx = prev.x_coordinate - prevPrev.x_coordinate;
         const pdy = prev.y_coordinate - prevPrev.y_coordinate;
-        const prevDir : [number, number] = [Math.sign(pdx), Math.sign(pdy)];
-
-        if (dir[0] !== prevDir[0] || dir[1] !== prevDir[1]) {
-          instruction = this.getTurn(prevDir, dir);
+        // Wektory kierunku
+        const v1 = { x: pdx, y: pdy };
+        const v2 = { x: dx, y: dy };
+        // Sprawdź czy kierunek się zmienił
+        if (v1.x * v2.y - v1.y * v2.x !== 0) { // iloczyn wektorowy != 0 => skręt
+          // Określ lewo/prawo przez znak iloczynu wektorowego
+          const cross = v1.x * v2.y - v1.y * v2.x;
+          instruction = cross > 0 ? 'left' : 'right';
         }
       }
-
       if (instruction === 'straight' && i < path.length - 1) {
-        // Konsoliduj tylko jeśli to nie jest ostatni manewr na ścieżce
         const lastManeuver = maneuvers[maneuvers.length - 1];
         if (lastManeuver && lastManeuver.instruction === 'straight') {
           lastManeuver.distance += distance;
           continue;
         }
       }
-
       maneuvers.push(new Maneuver(instruction, distance, curr));
     }
-
-
+    console.warn("END", maneuvers);
     return maneuvers;
   }
 
-  private getTurn(prevDir : [number, number], newDir : [number, number]) : 'left' | 'right' {
-    if (prevDir[0] === 1 && newDir[1] === 1) return 'right'; // prawo -> dół
-    if (prevDir[0] === 1 && newDir[1] === -1) return 'left'; // prawo -> góra
-    if (prevDir[0] === -1 && newDir[1] === 1) return 'left'; // lewo -> dół
-    if (prevDir[0] === -1 && newDir[1] === -1) return 'right'; // lewo -> góra
-    if (prevDir[1] === 1 && newDir[0] === 1) return 'left'; // dół -> prawo
-    if (prevDir[1] === 1 && newDir[0] === -1) return 'right'; // dół -> lewo
-    if (prevDir[1] === -1 && newDir[0] === 1) return 'right'; // góra -> prawo
-    if (prevDir[1] === -1 && newDir[0] === -1) return 'left'; // góra -> lewo
-    // fallback
-    return 'right';
-  }
 
   /**
    * Znajduje najbliższą wolną komórkę gridu (grid[y][x] === 0) od (x, y).
@@ -205,6 +184,7 @@ export class Navigation {
     }
     return null;
   }
+
   /**
    * Wyznacza manewry na jednym piętrze (od/do dowolnych punktów na tym piętrze) - asynchronicznie.
    */
@@ -325,7 +305,10 @@ export class Navigation {
   /**
    * Publiczna nawigacja multi-floor: zwraca tablicę manewrów na każde piętro (Maneuver[][])
    */
-  public navigate(from : Point, to : Point) : Observable<Maneuver[][] | null> {
+  public navigate(from : Point, to : Point) : Observable<{
+    maneuvers : Maneuver[][],
+    order : number[]
+  } | null> {
     this.points.set(this.mapS.getAllCachedPoints);
     if (!this.points()) return of(null);
 
@@ -338,36 +321,40 @@ export class Navigation {
           if (!maneuvers) return null;
           floorArray[from.floor_number + 1] = maneuvers;
 
-          return floorArray;
+          return {
+            maneuvers : floorArray,
+            order     : [from.floor_number + 1]
+          };
         })
       );
     }
     // Znajdź łańcuch connectorów przez wszystkie piętra
     const connectorChain = this.findConnectorChain(from, to);
-    console.log(connectorChain);
 
     if (!connectorChain || connectorChain.length === 0) return of(null);
     // Zbuduj segmenty: start->c1, c1->c2, ..., cN->end
     const points : Point[] = [from, ...connectorChain, to];
     const segments : Observable<Maneuver[] | null>[] = [];
+    const orderArray : number[] = [];
     for (let i = 0 ; i < points.length - 1 ; i++) {
       if (points[i].floor_number !== points[i + 1].floor_number) {
         // Create maneuvers for floor change
         const floorChangeManeuver = new Maneuver(
           points[i].floor_number < points[i + 1].floor_number ? 'up' : 'down',
           0.05,
-          points[i + 1]
+          points[i] // zabij mnie
         );
         segments.push(of([floorChangeManeuver]));
+        // Dodaj do orderArray piętro docelowe (w systemie 0-4)
+        orderArray.push(points[i + 1].floor_number + 1);
         continue;
       }
       segments.push(this.navigateSingleFloor$(points[i], points[i + 1]));
+      // Dodaj do orderArray piętro docelowe (w systemie 0-4)
+      orderArray.push(points[i + 1].floor_number + 1);
     }
-
-
-
-
-    return forkJoin(segments).pipe(
+    const order = Array.from(new Set(orderArray)); // Unikalne piętra w kolejności występowania
+    const manuevers = forkJoin(segments).pipe(
       map(results => {
         if (results.some(r => !r)) return null;
         // Każdy segment to osobna tablica manewrów
@@ -380,6 +367,15 @@ export class Navigation {
           maneuversPerFloor[floor] = maneuversPerFloor[floor].concat(segmentManeuvers);
         }
         return maneuversPerFloor;
+      })
+    );
+    return manuevers.pipe(
+      map(maneuversPerFloor => {
+        if (!maneuversPerFloor) return null;
+        return {
+          maneuvers : maneuversPerFloor,
+          order     : order
+        };
       })
     );
   }

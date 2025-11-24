@@ -316,6 +316,9 @@ export class MapComponent {
     this.navigationS.navigate(startPoint, endPoint).subscribe((path) => {
       console.log("Received path:", path);
 
+      const maneuversList = path?.maneuvers!;
+      const orderList = path?.order!;
+
       if (!path) {
         this.fullPath.set(null);
         this.path.set(null);
@@ -323,18 +326,20 @@ export class MapComponent {
         return;
       }
 
-      this.fullPath.set(path);
+      this.fullPath.set(path.maneuvers);
 
 
-      this.maneuvers.set(path.flat());
+      const sortedManeuvers = orderList.map((index) => {
+        return maneuversList[index];
+      });
 
-      path.forEach((storeyPath, index) => {
+      this.maneuvers.set(sortedManeuvers.flat());
+
+      path.maneuvers.forEach((storeyPath, index) => {
         console.log(`Storey ${ index - 1 }:`, storeyPath.map(m => `${ m.instruction } to (${ m.point.x_coordinate }, ${ m.point.y_coordinate })`));
       });
 
-      const filteredPath = path[this.selectedStorey() + 1]; // Floors enum starts at -1
-
-      console.log("Filtered path for current storey:", filteredPath);
+      const filteredPath = path.maneuvers[this.selectedStorey() + 1]; // Floors enum starts at -1
 
       this.path.set(filteredPath.flatMap(p => [p.point.x_coordinate, p.point.y_coordinate]));
     });
