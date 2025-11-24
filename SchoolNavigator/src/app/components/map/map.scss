@@ -179,3 +179,39 @@ label {
     font-weight: 500;
   }
 }
+
+.tooltip-content {
+  background-color: var(--background-secondary);
+  padding: i.$padding-sm i.$padding-md;
+  border-radius: i.$border-radius-lg;
+  box-shadow: i.$box-shadow-lg;
+  max-width: 250px;
+  font-size: i.$font-size-sm;
+  display: flex;
+  flex-direction: column;
+  gap: i.$padding-sm;
+
+  h2 {
+    font-size: i.$font-size-lg;
+    font-weight: 600;
+  }
+
+  p {
+    color: var(--text-muted);
+  }
+
+  button {
+    align-self: flex-start;
+    padding: i.$padding-xs i.$padding-sm;
+    font-size: i.$font-size-sm;
+    font-weight: 500;
+    border-radius: i.$border-radius-md;
+    background-color: var(--primary-background);
+    color: var(--background);
+    transition: i.transition(background-color), i.transition(color);
+
+    &:hover {
+      background-color: var(--primary);
+    }
+  }
+}

@@ -33,7 +33,7 @@ export class Tooltip {
   private hideTimeout : any;
   private tooltip = viewChild.required<TemplateRef<any>>('tooltip');
 
-  protected isVisible = signal(false);
+  isVisible = signal(false);
 
   constructor(
     private overlay : Overlay,

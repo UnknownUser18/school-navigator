@@ -107,7 +107,29 @@
 
 <tooltip #tooltip>
   @let point = selectedPoint();
-  <p>Punkt o id: {{ point?.id }}</p>
+  @if (point) {
+    <div class="tooltip-content">
+      <h2>
+
+      </h2>
+      @if ('room_number' in point) {
+        Sala {{ point.room_number }}
+      } @else if ('exit_name' in point) {
+        Wyjście {{ point.exit_name }}
+      } @else if ('up_stair_id' in point) {
+        Schody S{{ point.id }}
+      } @else {
+        Punkt {{ point.id }}
+      }
+      <p>{{ point.description }}</p>
+      <button class="primary" (click)="setAsStaringPlace(point); tooltip.hide()">Ustaw jako punkt startowy</button>
+      <button class="secondary" (click)="setAsDestinationPlace(point); tooltip.hide()">Ustaw jako punkt docelowy</button>
+    </div>
+  } @else {
+    <div class="tooltip-content">
+      <p>Brak informacji o punkcie</p>
+    </div>
+  }
 </tooltip>
 
 @if (startingPlaceSuggestions()) {

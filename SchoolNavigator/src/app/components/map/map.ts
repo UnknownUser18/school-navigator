@@ -344,4 +344,16 @@ export class MapComponent {
       this.path.set(filteredPath.flatMap(p => [p.point.x_coordinate, p.point.y_coordinate]));
     });
   }
+
+  protected setAsStaringPlace(point : Point) {
+    const placeName = point instanceof Room ? point.room_number : point instanceof Exit ? point.exit_name : `S${ point.id }`;
+    this.navigationForm.get('startingPlace')?.setValue(placeName);
+    this.checkIfCanNavigate();
+  }
+
+  protected setAsDestinationPlace(point : Point) {
+    const placeName = point instanceof Room ? point.room_number : point instanceof Exit ? point.exit_name : `S${ point.id }`;
+    this.navigationForm.get('destinationPlace')?.setValue(placeName);
+    this.checkIfCanNavigate();
+  }
 }
