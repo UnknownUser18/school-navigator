@@ -1,0 +1,47 @@
+@use 'index' as i;
+
+h2 {
+  padding: i.$padding-lg i.$padding-md;
+  display: inline-flex;
+  gap: i.$margin-md;
+  align-items: center;
+  width: 100%;
+  color: var(--header);
+  border-bottom: i.$base-border var(--background-divider);
+}
+
+li {
+  border-bottom: i.$base-border var(--background-divider);
+  padding: i.$padding-lg i.$padding-md;
+  display: flex;
+  font-weight: 500;
+  gap: i.$margin-md;
+  align-items: center;
+  font-size: i.$font-size-md;
+  color: var(--header);
+
+  span {
+    padding: i.$padding-sm;
+    background-color: var(--background-secondary);
+    border-radius: i.$border-radius-lg;
+  }
+
+  input {
+    width: 24px;
+    height: 24px;
+    margin-left: auto;
+  }
+}
+.success-message {
+  text-align: center;
+  font-weight: 500;
+  color: var(--primary);
+  margin-top: i.$margin-md;
+}
+
+.error-message {
+  text-align: center;
+  font-weight: 500;
+  color: var(--error);
+  margin-top: i.$margin-md;
+}

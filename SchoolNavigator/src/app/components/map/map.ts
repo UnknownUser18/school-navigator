@@ -159,7 +159,7 @@ export class MapComponent {
   private getSuggestions(query : string, flags : 'room' | 'connector' | 'exit' | null) : Suggestion[] {
     const cleanedQuery = query.replace(/^(sala|wyjście|klatka schodowa)\s+/i, '').trim();
     return this.mapS.getPlaceSuggestions(cleanedQuery).map(point => {
-      let name = '';
+      let name : string;
       if (point instanceof Room && (flags === null || flags === 'room')) {
         name = point.room_number;
       } else if (point instanceof Exit && (flags === null || flags === 'exit')) {
@@ -273,25 +273,49 @@ export class MapComponent {
     this.changeScale(direction);
   }
 
-  protected onPinchStart(event : NgKonvaEventObject<TouchEvent>) {
-    if (event.event.evt.touches.length === 2) {
-      this.lastPinchDistance = this.getPinchDistance(event.event.evt);
+  protected onPinchStart(event : NgKonvaEventObject<TouchEvent> | TouchEvent) {
+    if ('event' in event) {
+      event.event.evt.preventDefault();
+      if (event.event.evt.touches.length === 2) {
+        this.lastPinchDistance = this.getPinchDistance(event.event.evt);
+        this.lastPinchScale = this.map().getStage().scaleX();
+      }
+    } else if (event.touches.length === 2) {
+      this.lastPinchDistance = this.getPinchDistance(event);
       this.lastPinchScale = this.map().getStage().scaleX();
     }
   }
 
-  protected onPinchMove(event : NgKonvaEventObject<TouchEvent>) {
-    if (event.event.evt.touches.length === 2 && this.lastPinchDistance !== null && this.lastPinchScale !== null) {
-      event.event.evt.preventDefault();
-      const newDist = this.getPinchDistance(event.event.evt);
+  protected onPinchMove(event : NgKonvaEventObject<TouchEvent> | TouchEvent) {
+    console.log('Pinch move detected', event);
+    if ('event' in event) {
+      if (event.event.evt.touches.length === 2 && this.lastPinchDistance !== null && this.lastPinchScale !== null) {
+        event.event.evt.preventDefault();
+        const newDist = this.getPinchDistance(event.event.evt);
+        let scale = (newDist / this.lastPinchDistance) * this.lastPinchScale;
+        scale = Math.max(0.5, Math.min(4, scale));
+        this.map().getStage().scale({ x : scale, y : scale });
+      }
+      return;
+    }
+    if (event.touches.length === 2 && this.lastPinchDistance !== null && this.lastPinchScale !== null) {
+      event.preventDefault();
+      const newDist = this.getPinchDistance(event);
       let scale = (newDist / this.lastPinchDistance) * this.lastPinchScale;
       scale = Math.max(0.5, Math.min(4, scale));
       this.map().getStage().scale({ x : scale, y : scale });
     }
   }
 
-  protected onPinchEnd(event : NgKonvaEventObject<TouchEvent>) {
-    if (event.event.evt.touches.length < 2) {
+  protected onPinchEnd(event : NgKonvaEventObject<TouchEvent> | TouchEvent) {
+    if ('event' in event) {
+      if (event.event.evt.touches.length < 2) {
+        this.lastPinchDistance = null;
+        this.lastPinchScale = null;
+      }
+      return;
+    }
+    if (event.touches.length < 2) {
       this.lastPinchDistance = null;
       this.lastPinchScale = null;
     }
@@ -334,10 +358,6 @@ export class MapComponent {
       });
 
       this.maneuvers.set(sortedManeuvers.flat());
-
-      path.maneuvers.forEach((storeyPath, index) => {
-        console.log(`Storey ${ index - 1 }:`, storeyPath.map(m => `${ m.instruction } to (${ m.point.x_coordinate }, ${ m.point.y_coordinate })`));
-      });
 
       const filteredPath = path.maneuvers[this.selectedStorey() + 1]; // Floors enum starts at -1
 

@@ -1,6 +1,7 @@
 @use 'index' as i;
 
 h1 {
+  color: var(--header);
   padding: i.$padding-lg 0;
   font-size: i.$font-size-lg;
   background-color: var(--background-tertiary);
@@ -42,6 +43,7 @@ form {
 }
 
 label {
+  color: var(--header);
   width: 100%;
   display: flex;
   gap: i.$padding-sm;
@@ -175,6 +177,7 @@ label {
   }
 
   h3 {
+    color: var(--header);
     font-size: i.$font-size-md;
     font-weight: 500;
   }
@@ -192,8 +195,9 @@ label {
   gap: i.$padding-sm;
 
   h2 {
-    font-size: i.$font-size-lg;
-    font-weight: 600;
+    color: var(--header);
+    font-size: i.$font-size-md;
+    font-weight: 500;
   }
 
   p {

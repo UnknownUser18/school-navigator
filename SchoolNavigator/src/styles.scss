@@ -20,6 +20,22 @@ body {
   font-family: i.$font;
   background-color: var(--background);
 
+  &.dark-theme {
+    --background: #121212;
+    --background-secondary: #1E1E1E;
+    --background-tertiary: #2C2C2C;
+    --background-divider: #333333;
+    --text: #E4E4E4;
+    --header: #FFFFFF;
+    --text-muted: #9CA3AF;
+    --primary: #137FEC;
+    --primary-background: #166ac4;
+    --primary-container: #137FEC33;
+    --primary-ripple: #137FEC1A;
+    --background-ripple: #E4E4E40A;
+    --error: #FF6F71;
+    --maneuver-background: #1E1E1E;
+  }
 }
 
 button, a {
@@ -33,8 +49,8 @@ button, a {
 input, textarea, select, button {
   font-family: inherit;
   font-size: inherit;
-  color: inherit;
   border: none;
   background-color: inherit;
+  color: inherit;
   outline: none;
 }

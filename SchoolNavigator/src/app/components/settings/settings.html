@@ -1,0 +1,36 @@
+<h2>
+  <fa-icon [icon]="faArrowLeft" />
+  Ustawienia
+</h2>
+<ul>
+  <li>
+    <span>
+      <fa-icon [icon]="faMoon" />
+    </span>
+    <div>Zmień motyw</div>
+    <input type="checkbox" (click)="toggleTheme()">
+  </li>
+  <li>
+    <span>
+      <fa-icon [icon]="faWarning" />
+    </span>
+    <div>Tryb kryzysowy</div>
+    <input type="checkbox">
+  </li>
+  <li (click)="resetData()">
+    <span>
+      <fa-icon [icon]="faRotateBack" />
+    </span>
+    <div>Reset danych</div>
+  </li>
+</ul>
+
+@if (success()) {
+  <div class="success-message">
+    Dane zostały zresetowane pomyślnie.
+  </div>
+} @else if (success() === false && success() !== null) {
+  <div class="error-message">
+    Wystąpił błąd podczas resetowania danych.
+  </div>
+}
