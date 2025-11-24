@@ -135,8 +135,8 @@ export class Navigation {
         const pdx = prev.x_coordinate - prevPrev.x_coordinate;
         const pdy = prev.y_coordinate - prevPrev.y_coordinate;
         // Wektory kierunku
-        const v1 = { x: pdx, y: pdy };
-        const v2 = { x: dx, y: dy };
+        const v1 = { x : pdx, y : pdy };
+        const v2 = { x : dx, y : dy };
         // Sprawdź czy kierunek się zmienił
         if (v1.x * v2.y - v1.y * v2.x !== 0) { // iloczyn wektorowy != 0 => skręt
           // Określ lewo/prawo przez znak iloczynu wektorowego
@@ -153,10 +153,9 @@ export class Navigation {
       }
       maneuvers.push(new Maneuver(instruction, distance, curr));
     }
-    console.warn("END", maneuvers);
+
     return maneuvers;
   }
-
 
   /**
    * Znajduje najbliższą wolną komórkę gridu (grid[y][x] === 0) od (x, y).
@@ -235,71 +234,70 @@ export class Navigation {
   }
 
   /**
-   * Znajduje najkrótszy łańcuch connectorów prowadzący przez wszystkie piętra pośrednie.
-   * Zwraca: tablicę connectorów (po jednym na każde piętro, w kolejności od startu do końca).
+   * Znajduje łańcuch connectorów prowadzący przez wszystkie piętra pośrednie,
+   * wybierając najbliższy connector do punktu startowego, a potem przechodząc
+   * przez powiązane connectory na kolejnych piętrach.
    */
   private findConnectorChain(from : Point, to : Point) : Connector[] | null {
     if (from.floor_number === to.floor_number) return [];
-
     const all = this.points();
-
     if (!all) return null;
-
-    // Zbuduj mapę: piętro -> lista connectorów
+    const connectors = all.filter(connector => 'up_stair_id' in connector || 'down_stair_id' in connector) as Connector[];
     const connectorsByFloor = new Map<number, Connector[]>();
-
-    const connectors = all.filter(connector => {
-      return 'up_stair_id' in connector || 'down_stair_id' in connector;
-    })
-
     for (const c of connectors) {
       const arr = connectorsByFloor.get(c.floor_number) || [];
-      arr.push(c as Connector);
+      arr.push(c);
       connectorsByFloor.set(c.floor_number, arr);
     }
+    // Ustal kierunek przechodzenia
+    const step = from.floor_number < to.floor_number ? 1 : -1;
+    const chain : Connector[] = [];
+    let currentFloor = from.floor_number;
 
-    // BFS po piętrach i connectorach
-    type State = { floor : number, connector : Connector, path : Connector[] };
-    const visited = new Set<string>();
-    const queue : State[] = [];
-    // Start: wszystkie connectory na piętrze startowym
-    const startConnectors = connectorsByFloor.get(from.floor_number) || [];
-    for (const c of startConnectors) {
-      queue.push({ floor : from.floor_number, connector : c, path : [c] });
-      visited.add(`${ from.floor_number }:${ c.up_stair_id || '' }:${ c.down_stair_id || '' }`);
-    }
-    while (queue.length > 0) {
-      const { floor, connector, path } = queue.shift()!;
-      // Czy jesteśmy na piętrze docelowym?
-      if (connector.floor_number === to.floor_number) {
-        return path;
-      }
-      // Szukaj połączeń na wyższe/niższe piętro
-      for (const [nextFloor, nextConnectors] of connectorsByFloor.entries()) {
-        if (nextFloor === floor) continue;
-        for (const next of nextConnectors) {
-          // Sprawdź czy connectory są połączone tym samym up_stair_id/down_stair_id
-
-          const connUpId = connector.up_stair_id;
-          const connId = connector.id;
-          const connDownId = connector.down_stair_id;
-          const nextId = next.id;
-          const nextUpId = next.up_stair_id;
-          const nextDownId = next.down_stair_id;
-
-          if (!connUpId && !connDownId) continue;
-          if (!nextUpId && !nextDownId) continue;
-
-          if ((connUpId === nextId) || (connDownId === nextId) || (connId === nextUpId) || (connId === nextDownId)) {
-            const key = `${ nextFloor }:${ next.up_stair_id || '' }:${ next.down_stair_id || '' }`;
-            if (visited.has(key)) continue;
-            visited.add(key);
-            queue.push({ floor : nextFloor, connector : next, path : [...path, next] });
+    let nearest : Connector | null = null;
+    let minDist = Infinity;
+    while (currentFloor !== to.floor_number + step) {
+      const startConnectors = connectorsByFloor.get(currentFloor) || [];
+      for (const c of startConnectors) {
+        if ((step === 1 && c.up_stair_id) || (step === -1 && c.down_stair_id)) {
+          const dx = c.x_coordinate - from.x_coordinate;
+          const dy = c.y_coordinate - from.y_coordinate;
+          const dist = dx * dx + dy * dy;
+          if (dist < minDist) {
+            minDist = dist;
+            nearest = c;
           }
         }
       }
+      if (!nearest) return null;
+      // Find connector to the down/up stair on the same floor as the connector found
+      if (currentFloor !== from.floor_number && chain.length > 0 && currentFloor !== to.floor_number + step) {
+        const floorConnectors = connectorsByFloor.get(currentFloor) || [];
+        let linkerConnector : Connector | null = null;
+        let dist = Infinity;
+
+        for (const c of floorConnectors) {
+          if ((step === 1 && c.down_stair_id) || (step === -1 && c.up_stair_id)) {
+            const dx = c.x_coordinate - chain[chain.length - 1].x_coordinate;
+            const dy = c.y_coordinate - chain[chain.length - 1].y_coordinate;
+            const currentDist = dx * dx + dy * dy;
+            if (currentDist < dist) {
+              dist = currentDist;
+              linkerConnector = c;
+            }
+          } // istnieje połączenie w dół/w górę (rewers)
+        }
+        if (!linkerConnector) return null;
+
+        chain.push(linkerConnector);
+      }
+
+      chain.push(nearest);
+      minDist = Infinity;
+      currentFloor += step;
     }
-    return null;
+    chain.pop(); // usuń ostatni connector, bo to już piętro docelowe
+    return chain;
   }
 
   /**
@@ -332,13 +330,11 @@ export class Navigation {
     const connectorChain = this.findConnectorChain(from, to);
 
     if (!connectorChain || connectorChain.length === 0) return of(null);
-    // Zbuduj segmenty: start->c1, c1->c2, ..., cN->end
     const points : Point[] = [from, ...connectorChain, to];
     const segments : Observable<Maneuver[] | null>[] = [];
     const orderArray : number[] = [];
     for (let i = 0 ; i < points.length - 1 ; i++) {
       if (points[i].floor_number !== points[i + 1].floor_number) {
-        // Create maneuvers for floor change
         const floorChangeManeuver = new Maneuver(
           points[i].floor_number < points[i + 1].floor_number ? 'up' : 'down',
           0.05,
