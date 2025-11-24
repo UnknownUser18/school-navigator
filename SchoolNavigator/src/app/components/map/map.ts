@@ -9,8 +9,8 @@ import { FaIconComponent } from "@fortawesome/angular-fontawesome";
 import { faArrowLeft, faArrowRight, faArrowUp, faFlagCheckered, faLocationDot, faSearch, faStairs } from "@fortawesome/free-solid-svg-icons";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatRipple } from "@angular/material/core";
-import ContainerConfig = Konva.ContainerConfig;
 import { Maneuver, Navigation } from "@services/navigation";
+import ContainerConfig = Konva.ContainerConfig;
 
 type Suggestion = {
   type : 'room' | 'exit' | 'staircase';
@@ -41,6 +41,8 @@ export class MapComponent {
 
   protected readonly map = viewChild.required<StageComponent>('map');
 
+
+  private readonly fullPath = signal<Maneuver[][] | null>(null);
   protected readonly selectedStorey = signal<Floors>(Floors.FIRST);
   protected readonly points = signal<Point[] | null>(null);
   protected readonly selectedPoint = signal<Point | null>(null);
@@ -100,6 +102,11 @@ export class MapComponent {
       // First get from cache or fetch from DB if not in cache
       this.points.set(pointsFromStorey);
 
+      if (this.fullPath()) {
+        const filteredPath = this.fullPath()![this.selectedStorey() + 1]; // Floors enum starts at -1
+        this.path.set(filteredPath.flatMap(p => [p.point.x_coordinate, p.point.y_coordinate]));
+      }
+
       if (!pointsFromStorey) {
         this.mapS.getAllPoints.subscribe(() => {
           const pointsFromStoreyAfterFetch = this.mapS.getPointsFromStorey(this.selectedStorey());
@@ -122,7 +129,7 @@ export class MapComponent {
 
     // Limit zoom scale
     let newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
-    newScale = Math.max(0.5, Math.min(4, newScale));
+    newScale = Math.max(0.1, Math.min(4, newScale));
 
     this.map().getStage().scale({ x : newScale, y : newScale });
 
@@ -158,7 +165,7 @@ export class MapComponent {
       } else if (point instanceof Exit && (flags === null || flags === 'exit')) {
         name = point.exit_name;
       } else if (!(point instanceof Room) && !(point instanceof Exit) && (flags === null || flags === 'connector')) {
-        name = `Klatka schodowa ${ point.id }`;
+        name = `S${ point.id }`;
       } else {
         name = '';
       }
@@ -299,26 +306,37 @@ export class MapComponent {
     if (startingPlace.trim() === destinationPlace.trim())
       return;
 
+
     const startPoint = this.mapS.getPointFromQuery(startingPlace);
     const endPoint = this.mapS.getPointFromQuery(destinationPlace);
 
     if (!startPoint || !endPoint)
       return;
 
-
     this.navigationS.navigate(startPoint, endPoint).subscribe((path) => {
+      console.log("Received path:", path);
+
       if (!path) {
+        this.fullPath.set(null);
         this.path.set(null);
         this.maneuvers.set(null);
         return;
       }
 
-      this.maneuvers.set(path);
+      this.fullPath.set(path);
 
-      this.path.set(path ? path.flatMap(p => [p.point.x_coordinate, p.point.y_coordinate]) : null);
-      console.log(this.path())
+
+      this.maneuvers.set(path.flat());
+
+      path.forEach((storeyPath, index) => {
+        console.log(`Storey ${ index - 1 }:`, storeyPath.map(m => `${ m.instruction } to (${ m.point.x_coordinate }, ${ m.point.y_coordinate })`));
+      });
+
+      const filteredPath = path[this.selectedStorey() + 1]; // Floors enum starts at -1
+
+      console.log("Filtered path for current storey:", filteredPath);
+
+      this.path.set(filteredPath.flatMap(p => [p.point.x_coordinate, p.point.y_coordinate]));
     });
-
   }
-
 }

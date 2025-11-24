@@ -35,20 +35,13 @@ export class Point {
   public y_coordinate : number;
   public floor_number : Floors;
   public description : string;
-  public neighbours? : number[];
 
-  constructor(id : number, x : number, y : number, floor_number : Floors, description? : string, neighbours? : string) {
+  constructor(id : number, x : number, y : number, floor_number : Floors, description? : string) {
     this.id = id;
     this.x_coordinate = x;
     this.y_coordinate = y;
     this.floor_number = floor_number;
     this.description = description || '';
-
-    this.neighbours = neighbours ? new Array<number>() : undefined;
-    if (neighbours) {
-      const neighbourIds = neighbours.split(',').map(idStr => parseInt(idStr.trim(), 10));
-      this.neighbours!.push(...neighbourIds);
-    }
   }
 }
 
@@ -62,8 +55,8 @@ export interface Packet {
 export class Room extends Point {
   public room_number : string;
 
-  constructor(id : Point['id'], x : Point['x_coordinate'], y : Point['y_coordinate'], floor_number : Point['floor_number'], room_number : string, description? : string, neighbours? : string) {
-    super(id, x, y, floor_number, description, neighbours);
+  constructor(id : Point['id'], x : Point['x_coordinate'], y : Point['y_coordinate'], floor_number : Point['floor_number'], room_number : string, description? : string) {
+    super(id, x, y, floor_number, description);
     this.room_number = room_number;
   }
 }
@@ -72,8 +65,8 @@ export class Connector extends Point {
   public down_stair_id : Connector['id'] | null;
   public up_stair_id : Connector['id'] | null;
 
-  constructor(id : Point['id'], x : Point['x_coordinate'], y : Point['y_coordinate'], floor_number : Point['floor_number'], down_stair_id : Connector['id'] | null, up_stair_id : Connector['id'] | null, description? : string, neighbours? : string) {
-    super(id, x, y, floor_number, description, neighbours);
+  constructor(id : Point['id'], x : Point['x_coordinate'], y : Point['y_coordinate'], floor_number : Point['floor_number'], down_stair_id : Connector['id'] | null, up_stair_id : Connector['id'] | null, description? : string) {
+    super(id, x, y, floor_number, description);
     this.down_stair_id = down_stair_id;
     this.up_stair_id = up_stair_id;
   }
@@ -83,8 +76,8 @@ export class Exit extends Point {
   public isEmergencyExit : boolean;
   public exit_name : string;
 
-  constructor(id : Point['id'], x : Point['x_coordinate'], y : Point['y_coordinate'], floor_number : Point['floor_number'], isEmergencyExit : boolean, exit_name : string, description? : string, neighbours? : string) {
-    super(id, x, y, floor_number, description, neighbours);
+  constructor(id : Point['id'], x : Point['x_coordinate'], y : Point['y_coordinate'], floor_number : Point['floor_number'], isEmergencyExit : boolean, exit_name : string, description? : string) {
+    super(id, x, y, floor_number, description);
     this.isEmergencyExit = isEmergencyExit;
     this.exit_name = exit_name;
   }
@@ -137,11 +130,11 @@ export class MapService {
 
     return pointsArray.map(point => {
       if ('room_number' in point) {
-        return new Room(point.id, point.x_coordinate, point.y_coordinate, point.floor_number, point.room_number, point.description, point.neighbours as unknown as string);
+        return new Room(point.id, point.x_coordinate, point.y_coordinate, point.floor_number, point.room_number, point.description);
       } else if ('exit_name' in point) {
-        return new Exit(point.id, point.x_coordinate, point.y_coordinate, point.floor_number, (point as any).isEmergencyExit, (point as any).exit_name, point.description, point.neighbours as unknown as string);
+        return new Exit(point.id, point.x_coordinate, point.y_coordinate, point.floor_number, (point as any).isEmergencyExit, (point as any).exit_name, point.description);
       } else {
-        return new Connector(point.id, point.x_coordinate, point.y_coordinate, point.floor_number, (point as any).down_stair_id, (point as any).up_stair_id, point.description, point.neighbours as unknown as string);
+        return new Connector(point.id, point.x_coordinate, point.y_coordinate, point.floor_number, (point as any).down_connection_id, (point as any).up_connection_id, point.description);
       }
     });
   }
@@ -220,7 +213,7 @@ export class MapService {
         return point;
       } else if (point instanceof Exit && point.exit_name.toLowerCase() === query.toLowerCase()) {
         return point;
-      } else if (point instanceof Connector && (`Schody ${ point.id }`.toLowerCase() === query.toLowerCase())) {
+      } else if (point instanceof Connector && (`S${ point.id }`.toLowerCase() === query.toLowerCase())) {
         return point;
       }
     }

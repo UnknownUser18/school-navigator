@@ -1,7 +1,7 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { AllPoints, MapService, Point } from "@services/map.service";
-import { Observable, of } from 'rxjs';
-import { map as rxMap } from 'rxjs/operators';
+import { AllPoints, MapService, Point, Connector } from "@services/map.service";
+import { Observable, of, forkJoin } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export class Maneuver {
   public instruction : 'straight' | 'left' | 'right' | 'up' | 'down';
@@ -23,7 +23,6 @@ type GridCoordinate = { x : number, y : number };
 })
 export class Navigation {
   private static readonly GRID_SCALE = 5;
-  private static readonly MIN_DIST = 0;
   private readonly points = signal<AllPoints | null>(null);
 
   private mapS = inject(MapService);
@@ -206,11 +205,10 @@ export class Navigation {
     }
     return null;
   }
-
-  public navigate(from : Point, to : Point) : Observable<Maneuver[] | null> {
-    this.points.set(this.mapS.getAllCachedPoints);
-    if (!this.points()) return of(null);
-
+  /**
+   * Wyznacza manewry na jednym piętrze (od/do dowolnych punktów na tym piętrze) - asynchronicznie.
+   */
+  private navigateSingleFloor$(from : Point, to : Point) : Observable<Maneuver[] | null> {
     const fromGrid = {
       x : this.computeCoordinate(from.x_coordinate),
       y : this.computeCoordinate(from.y_coordinate)
@@ -221,14 +219,13 @@ export class Navigation {
     };
 
     return this.mapS.getFloorGrid(from.floor_number).pipe(
-      rxMap((grid) => {
+      map(grid => {
         if (!grid) return null;
         const rows = grid.length;
         const cols = grid[0].length;
         const inBounds = (x : number, y : number) => x >= 0 && y >= 0 && x < cols && y < rows;
         let start = fromGrid;
         let end = toGrid;
-        // Jeśli start lub end są poza gridem lub na ścianie, znajdź najbliższy wolny punkt
         if (!inBounds(start.x, start.y) || grid[start.y][start.x] !== 0) {
           const found = this.findNearestWalkable(grid, start.x, start.y);
           if (!found) return null;
@@ -239,7 +236,6 @@ export class Navigation {
           if (!found) return null;
           end = found;
         }
-        // Jeśli start lub end są na ścianie i nie znaleziono wolnej komórki, nie generuj ścieżki
         if (!inBounds(start.x, start.y) || grid[start.y][start.x] !== 0) return null;
         if (!inBounds(end.x, end.y) || grid[end.y][end.x] !== 0) return null;
         let path = this.aStar(grid, start, end);
@@ -253,17 +249,138 @@ export class Navigation {
             || new Point(-1, px, py, from.floor_number)
           );
         });
-        // ZAWSZE doklejaj from na początek, jeśli nie pokrywa się z pierwszym punktem ścieżki
-        if (pointsPath.length === 0 || pointsPath[0].x_coordinate !== from.x_coordinate || pointsPath[0].y_coordinate !== from.y_coordinate) {
-          pointsPath = [from, ...pointsPath];
-        }
-        // ZAWSZE doklejaj to na koniec, jeśli nie pokrywa się z ostatnim punktem ścieżki
-        if (pointsPath.length === 0 || pointsPath[pointsPath.length - 1].x_coordinate !== to.x_coordinate || pointsPath[pointsPath.length - 1].y_coordinate !== to.y_coordinate) {
-          pointsPath = [...pointsPath, to];
-        }
         return this.generateManeuvers(pointsPath);
       })
     );
   }
 
+  /**
+   * Znajduje najkrótszy łańcuch connectorów prowadzący przez wszystkie piętra pośrednie.
+   * Zwraca: tablicę connectorów (po jednym na każde piętro, w kolejności od startu do końca).
+   */
+  private findConnectorChain(from : Point, to : Point) : Connector[] | null {
+    if (from.floor_number === to.floor_number) return [];
+
+    const all = this.points();
+
+    if (!all) return null;
+
+    // Zbuduj mapę: piętro -> lista connectorów
+    const connectorsByFloor = new Map<number, Connector[]>();
+
+    const connectors = all.filter(connector => {
+      return 'up_stair_id' in connector || 'down_stair_id' in connector;
+    })
+
+    for (const c of connectors) {
+      const arr = connectorsByFloor.get(c.floor_number) || [];
+      arr.push(c as Connector);
+      connectorsByFloor.set(c.floor_number, arr);
+    }
+
+    // BFS po piętrach i connectorach
+    type State = { floor : number, connector : Connector, path : Connector[] };
+    const visited = new Set<string>();
+    const queue : State[] = [];
+    // Start: wszystkie connectory na piętrze startowym
+    const startConnectors = connectorsByFloor.get(from.floor_number) || [];
+    for (const c of startConnectors) {
+      queue.push({ floor : from.floor_number, connector : c, path : [c] });
+      visited.add(`${ from.floor_number }:${ c.up_stair_id || '' }:${ c.down_stair_id || '' }`);
+    }
+    while (queue.length > 0) {
+      const { floor, connector, path } = queue.shift()!;
+      // Czy jesteśmy na piętrze docelowym?
+      if (connector.floor_number === to.floor_number) {
+        return path;
+      }
+      // Szukaj połączeń na wyższe/niższe piętro
+      for (const [nextFloor, nextConnectors] of connectorsByFloor.entries()) {
+        if (nextFloor === floor) continue;
+        for (const next of nextConnectors) {
+          // Sprawdź czy connectory są połączone tym samym up_stair_id/down_stair_id
+
+          const connUpId = connector.up_stair_id;
+          const connId = connector.id;
+          const connDownId = connector.down_stair_id;
+          const nextId = next.id;
+          const nextUpId = next.up_stair_id;
+          const nextDownId = next.down_stair_id;
+
+          if (!connUpId && !connDownId) continue;
+          if (!nextUpId && !nextDownId) continue;
+
+          if ((connUpId === nextId) || (connDownId === nextId) || (connId === nextUpId) || (connId === nextDownId)) {
+            const key = `${ nextFloor }:${ next.up_stair_id || '' }:${ next.down_stair_id || '' }`;
+            if (visited.has(key)) continue;
+            visited.add(key);
+            queue.push({ floor : nextFloor, connector : next, path : [...path, next] });
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Publiczna nawigacja multi-floor: zwraca tablicę manewrów na każde piętro (Maneuver[][])
+   */
+  public navigate(from : Point, to : Point) : Observable<Maneuver[][] | null> {
+    this.points.set(this.mapS.getAllCachedPoints);
+    if (!this.points()) return of(null);
+
+    const floorArray : Maneuver[][] = new Array(5).fill([]);
+
+    if (from.floor_number === to.floor_number) {
+
+      return this.navigateSingleFloor$(from, to).pipe( // +1 bo piętra od -1 do 3
+        map(maneuvers => {
+          if (!maneuvers) return null;
+          floorArray[from.floor_number + 1] = maneuvers;
+
+          return floorArray;
+        })
+      );
+    }
+    // Znajdź łańcuch connectorów przez wszystkie piętra
+    const connectorChain = this.findConnectorChain(from, to);
+    console.log(connectorChain);
+
+    if (!connectorChain || connectorChain.length === 0) return of(null);
+    // Zbuduj segmenty: start->c1, c1->c2, ..., cN->end
+    const points : Point[] = [from, ...connectorChain, to];
+    const segments : Observable<Maneuver[] | null>[] = [];
+    for (let i = 0 ; i < points.length - 1 ; i++) {
+      if (points[i].floor_number !== points[i + 1].floor_number) {
+        // Create maneuvers for floor change
+        const floorChangeManeuver = new Maneuver(
+          points[i].floor_number < points[i + 1].floor_number ? 'up' : 'down',
+          0.05,
+          points[i + 1]
+        );
+        segments.push(of([floorChangeManeuver]));
+        continue;
+      }
+      segments.push(this.navigateSingleFloor$(points[i], points[i + 1]));
+    }
+
+
+
+
+    return forkJoin(segments).pipe(
+      map(results => {
+        if (results.some(r => !r)) return null;
+        // Każdy segment to osobna tablica manewrów
+        console.log(results);
+        const maneuversPerFloor : Maneuver[][] = floorArray.fill([]).map(() => []);
+        // Mapuj segmenty do pięter (+1 bo piętra od -1 do 3)
+        for (let i = 0 ; i < results.length ; i++) {
+          const segmentManeuvers = results[i]!;
+          const floor = points[i].floor_number + 1; // +1 bo piętra od -1 do 3
+          maneuversPerFloor[floor] = maneuversPerFloor[floor].concat(segmentManeuvers);
+        }
+        return maneuversPerFloor;
+      })
+    );
+  }
 }
