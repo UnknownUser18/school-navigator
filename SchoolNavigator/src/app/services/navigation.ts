@@ -235,10 +235,10 @@ export class Navigation {
 
   /**
    * Znajduje łańcuch connectorów prowadzący przez wszystkie piętra pośrednie,
-   * wybierając najbliższy connector do punktu startowego, a potem przechodząc
-   * przez powiązane connectory na kolejnych piętrach.
+   * wybierając taki, który rzeczywiście prowadzi do piętra docelowego.
+   * Używa BFS po grafie connectorów.
    */
-  private findConnectorChain(from : Point, to : Point) : Connector[] | null {
+  private findConnectorChain(from: Point, to: Point): Connector[] | null {
     if (from.floor_number === to.floor_number) return [];
     const all = this.points();
     if (!all) return null;
@@ -250,50 +250,53 @@ export class Navigation {
       connectorsByFloor.set(c.floor_number, arr);
     }
     const step = from.floor_number < to.floor_number ? 1 : -1;
-    const chain : Connector[] = [];
-    let currentFloor = from.floor_number;
+    // BFS: węzeł = connector, ścieżka = tablica connectorów
+    const startConnectors = connectorsByFloor.get(from.floor_number);
+    const endConnectors = connectorsByFloor.get(to.floor_number);
+    if (!startConnectors || !endConnectors) return null;
 
-    const startConnectors = connectorsByFloor.get(currentFloor);
-    if (!startConnectors || startConnectors.length === 0) return null;
-
-    let nearestConnector : Connector | null = null;
-    let minDist = Infinity;
+    // BFS kolejka: [ścieżka, ostatni connector]
+    type PathNode = { path: Connector[], last: Connector };
+    const queue: PathNode[] = [];
+    const visited = new Set<string>(); // connectorId+floor
     for (const c of startConnectors) {
-      const dx = c.x_coordinate - from.x_coordinate;
-      const dy = c.y_coordinate - from.y_coordinate;
-      const dist = dx * dx + dy * dy;
-      if (dist < minDist) {
-        minDist = dist;
-        nearestConnector = c;
-      }
+      queue.push({ path: [c], last: c });
+      visited.add(`${c.id}:${c.floor_number}`);
     }
-
-    if (!nearestConnector) return null;
-    chain.push(nearestConnector);
-    currentFloor += step;
-
-    while (currentFloor !== to.floor_number + step) {
-      const floorConnectors = connectorsByFloor.get(currentFloor);
-      if (!floorConnectors || floorConnectors.length === 0) return null;
-
-      let nextConnector : Connector | null = null;
-      const nearestConnectorId = nearestConnector.id;
-
-      for (const c of floorConnectors) {
-        if (step === 1 && 'down_stair_id' in nearestConnector! && c.down_stair_id === nearestConnectorId) {
-          nextConnector = c;
-          break;
-        } else if (step === -1 && 'up_stair_id' in nearestConnector! && c.up_stair_id === nearestConnectorId) {
-          nextConnector = c;
-          break;
+    let bestPath: Connector[] | null = null;
+    let minStartDist = Infinity;
+    while (queue.length > 0) {
+      const { path, last } = queue.shift()!;
+      if (last.floor_number === to.floor_number) {
+        // Zakończ jeśli dotarliśmy na piętro docelowe
+        // Wybierz najbliższy connector do punktu docelowego
+        const dx = last.x_coordinate - to.x_coordinate;
+        const dy = last.y_coordinate - to.y_coordinate;
+        const dist = dx * dx + dy * dy;
+        if (dist < minStartDist) {
+          minStartDist = dist;
+          bestPath = [...path];
+        }
+        continue;
+      }
+      // Szukaj powiązanych connectorów na następnym piętrze
+      const nextFloor = last.floor_number + step;
+      const nextConnectors = connectorsByFloor.get(nextFloor);
+      if (!nextConnectors) continue;
+      for (const nc of nextConnectors) {
+        let connected = false;
+        if (step === 1 && 'down_stair_id' in nc && nc.down_stair_id === last.id) connected = true;
+        if (step === -1 && 'up_stair_id' in nc && nc.up_stair_id === last.id) connected = true;
+        if (connected) {
+          const key = `${nc.id}:${nc.floor_number}`;
+          if (!visited.has(key)) {
+            visited.add(key);
+            queue.push({ path: [...path, nc], last: nc });
+          }
         }
       }
-      if (!nextConnector) return null;
-      chain.push(nextConnector);
-      nearestConnector = nextConnector;
-      currentFloor += step;
     }
-    return chain;
+    return bestPath;
   }
 
   public navigate(from : Point, to : Point) : Observable<{
