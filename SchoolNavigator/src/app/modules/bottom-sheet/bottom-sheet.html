@@ -1,0 +1,54 @@
+@if (data.maneuvers) {
+  <ul class="maneuver-list">
+    @for (maneuver of data.maneuvers; track $index) {
+      <li>
+        <div class="icon">
+          @switch (maneuver.instruction) {
+            @case ('straight') {
+              <fa-icon [icon]="faArrowUp" />
+            }
+            @case ('down') {
+              <fa-icon [icon]="faStairs" />
+            }
+            @case ('up') {
+              <fa-icon [icon]="faStairs" />
+            }
+            @case ('left') {
+              <fa-icon [icon]="faArrowLeft" />
+            }
+            @case ('right') {
+              <fa-icon [icon]="faArrowRight" />
+            }
+          }
+        </div>
+        <h3>
+          @switch (maneuver.instruction) {
+            @case ('straight') {
+              Idź prosto {{ maneuver.distance.toFixed(2) }} metrów
+            }
+            @case ('down') {
+              Zejdź o piętro niżej
+            }
+            @case ('up') {
+              Wejdź o piętro wyżej
+            }
+            @case ('left') {
+              Skręć w lewo
+            }
+            @case ('right') {
+              Skręć w prawo
+            }
+          }
+        </h3>
+      </li>
+      @if ($last) {
+        <li>
+          <div class="icon">
+            <fa-icon [icon]="faFlagCheckered" />
+          </div>
+          <h3>Dotarłeś do celu!</h3>
+        </li>
+      }
+    }
+  </ul>
+}

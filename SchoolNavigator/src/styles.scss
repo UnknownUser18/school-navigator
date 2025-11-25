@@ -54,3 +54,10 @@ input, textarea, select, button {
   color: inherit;
   outline: none;
 }
+
+.mat-bottom-sheet-container {
+  background-color: var(--background-secondary) !important;
+  color: var(--text) !important;
+  border-top-left-radius: i.$border-radius-xl !important;
+  border-top-right-radius: i.$border-radius-xl !important;
+}

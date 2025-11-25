@@ -6,11 +6,12 @@ import { Tooltip } from "@modules/tooltip/component/tooltip";
 import { TooltipMapDirective } from "@modules/tooltip/directive/tooltip-map";
 import { Chip } from "@modules/chip/chip";
 import { FaIconComponent } from "@fortawesome/angular-fontawesome";
-import { faArrowLeft, faArrowRight, faArrowUp, faFlagCheckered, faLocationDot, faSearch, faStairs } from "@fortawesome/free-solid-svg-icons";
+import { faArrowRight, faChevronUp, faLocationDot, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatRipple } from "@angular/material/core";
 import { Maneuver, Navigation } from "@services/navigation";
-import ContainerConfig = Konva.ContainerConfig;
+import { MatBottomSheet } from "@angular/material/bottom-sheet";
+import { BottomSheet } from "@modules/bottom-sheet/bottom-sheet";
 
 type Suggestion = {
   type : 'room' | 'exit' | 'staircase';
@@ -38,11 +39,10 @@ type Suggestion = {
 export class MapComponent {
   private lastPinchDistance : number | null = null;
   private lastPinchScale : number | null = null;
+  private readonly fullPath = signal<Maneuver[][] | null>(null);
 
   protected readonly map = viewChild.required<StageComponent>('map');
 
-
-  private readonly fullPath = signal<Maneuver[][] | null>(null);
   protected readonly selectedStorey = signal<Floors>(Floors.FIRST);
   protected readonly points = signal<Point[] | null>(null);
   protected readonly selectedPoint = signal<Point | null>(null);
@@ -53,22 +53,14 @@ export class MapComponent {
 
   protected readonly faSearch = faSearch;
   protected readonly faLocationDot = faLocationDot;
-  protected readonly faArrowUp = faArrowUp;
-  protected readonly faStairs = faStairs;
-  protected readonly faArrowLeft = faArrowLeft;
-  protected readonly faFlagCheckered = faFlagCheckered;
+  protected readonly faChevronUp = faChevronUp;
   protected readonly faArrowRight = faArrowRight;
+  protected readonly window = window;
 
   protected navigationForm = new FormGroup({
     startingPlace    : new FormControl('', [Validators.required]),
     destinationPlace : new FormControl('', [Validators.required]),
   });
-
-  protected readonly mapConfig : ContainerConfig = {
-    width     : 350,
-    height    : 300,
-    draggable : true,
-  };
 
   protected readonly mapImage = {
     image : new Image(),
@@ -76,7 +68,7 @@ export class MapComponent {
     y     : 0,
   };
 
-  protected readonly storeys = [
+  protected readonly floors = [
     { label : 'Piwnica', value : Floors.UNDERGROUND, ariaLabel : 'Przejdź do piwnicy' },
     { label : 'Parter', value : Floors.GROUND, ariaLabel : 'Przejdź do parteru' },
     { label : 'Piętro 1', value : Floors.FIRST, ariaLabel : 'Przejdź do pierwszego piętra' },
@@ -84,7 +76,9 @@ export class MapComponent {
     { label : 'Piętro 3', value : Floors.THIRD, ariaLabel : 'Przejdź do trzeciego piętra' },
   ];
 
-  constructor(private mapS : MapService, private navigationS : Navigation) {
+  constructor(private mapS : MapService,
+              private navigationS : Navigation,
+              private matBottomSheet : MatBottomSheet) {
     const mapImageRecord : Record<Floors, string> = {
       [Floors.UNDERGROUND] : 'Underground',
       [Floors.GROUND]      : 'Ground',
@@ -95,11 +89,9 @@ export class MapComponent {
 
     effect(() => {
       this.selectedStorey();
-      // Use preloaded image from cache
       this.mapImage.image.src = `assets/maps/${ mapImageRecord[this.selectedStorey()] }.png`;
 
       const pointsFromStorey = this.mapS.getPointsFromStorey(this.selectedStorey());
-      // First get from cache or fetch from DB if not in cache
       this.points.set(pointsFromStorey);
 
       if (this.fullPath()) {
@@ -287,7 +279,6 @@ export class MapComponent {
   }
 
   protected onPinchMove(event : NgKonvaEventObject<TouchEvent> | TouchEvent) {
-    console.log('Pinch move detected', event);
     if ('event' in event) {
       if (event.event.evt.touches.length === 2 && this.lastPinchDistance !== null && this.lastPinchScale !== null) {
         event.event.evt.preventDefault();
@@ -338,7 +329,6 @@ export class MapComponent {
       return;
 
     this.navigationS.navigate(startPoint, endPoint).subscribe((path) => {
-      console.log("Received path:", path);
 
       const maneuversList = path?.maneuvers!;
       const orderList = path?.order!;
@@ -356,6 +346,8 @@ export class MapComponent {
       const sortedManeuvers = orderList.map((index) => {
         return maneuversList[index];
       });
+
+      console.log(sortedManeuvers);
 
       this.maneuvers.set(sortedManeuvers.flat());
 
@@ -376,4 +368,18 @@ export class MapComponent {
     this.navigationForm.get('destinationPlace')?.setValue(placeName);
     this.checkIfCanNavigate();
   }
+
+  protected openBottomSheet() {
+    this.matBottomSheet.open(BottomSheet, {
+      data : {
+        maneuvers : this.maneuvers(),
+      },
+    });
+  }
+
+  protected startNavigation() {
+
+  }
+
 }
+

@@ -249,14 +249,13 @@ export class Navigation {
       arr.push(c);
       connectorsByFloor.set(c.floor_number, arr);
     }
-    // Ustal kierunek przechodzenia
     const step = from.floor_number < to.floor_number ? 1 : -1;
     const chain : Connector[] = [];
     let currentFloor = from.floor_number;
 
-    // 1. Znajdź najbliższy connector na piętrze startowym
     const startConnectors = connectorsByFloor.get(currentFloor);
     if (!startConnectors || startConnectors.length === 0) return null;
+
     let nearestConnector : Connector | null = null;
     let minDist = Infinity;
     for (const c of startConnectors) {
@@ -268,21 +267,23 @@ export class Navigation {
         nearestConnector = c;
       }
     }
+
     if (!nearestConnector) return null;
     chain.push(nearestConnector);
     currentFloor += step;
 
-    // 2. Przechodź przez connectory na kolejnych piętrach
     while (currentFloor !== to.floor_number + step) {
       const floorConnectors = connectorsByFloor.get(currentFloor);
       if (!floorConnectors || floorConnectors.length === 0) return null;
-      // Znajdź powiązany connector na bieżącym piętrze
+
       let nextConnector : Connector | null = null;
+      const nearestConnectorId = nearestConnector.id;
+
       for (const c of floorConnectors) {
-        if (step === 1 && 'down_stair_id' in nearestConnector! && c.down_stair_id === nearestConnector!.id) {
+        if (step === 1 && 'down_stair_id' in nearestConnector! && c.down_stair_id === nearestConnectorId) {
           nextConnector = c;
           break;
-        } else if (step === -1 && 'up_stair_id' in nearestConnector! && c.up_stair_id === nearestConnector!.id) {
+        } else if (step === -1 && 'up_stair_id' in nearestConnector! && c.up_stair_id === nearestConnectorId) {
           nextConnector = c;
           break;
         }
@@ -295,9 +296,6 @@ export class Navigation {
     return chain;
   }
 
-  /**
-   * Publiczna nawigacja multi-floor: zwraca tablicę manewrów na każde piętro (Maneuver[][])
-   */
   public navigate(from : Point, to : Point) : Observable<{
     maneuvers : Maneuver[][],
     order : number[]
@@ -336,12 +334,10 @@ export class Navigation {
           points[i] // zabij mnie
         );
         segments.push(of([floorChangeManeuver]));
-        // Dodaj do orderArray piętro docelowe (w systemie 0-4)
         orderArray.push(points[i + 1].floor_number + 1);
         continue;
       }
       segments.push(this.navigateSingleFloor$(points[i], points[i + 1]));
-      // Dodaj do orderArray piętro docelowe (w systemie 0-4)
       orderArray.push(points[i + 1].floor_number + 1);
     }
     const order = Array.from(new Set(orderArray)); // Unikalne piętra w kolejności występowania
@@ -369,5 +365,9 @@ export class Navigation {
         };
       })
     );
+  }
+
+  public setNavigation(path : Maneuver[][]) {
+
   }
 }
