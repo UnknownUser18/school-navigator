@@ -1,10 +1,10 @@
 @use 'index' as i;
 
 :host {
-  display: flex;
-  flex-direction: column;
   height: 100%;
   overflow: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 h1 {
@@ -14,6 +14,17 @@ h1 {
   color: var(--header);
   text-align: center;
 }
+
+.parameters {
+  padding: i.$padding-md i.$padding-lg;
+  display: flex;
+  gap: i.$padding-md;
+  align-items: center;
+  font-size: i.$font-size-md;
+  font-weight: 600;
+  border-radius: i.$border-radius-md;
+}
+
 
 form {
   margin: i.$margin-sm 0;
@@ -96,11 +107,11 @@ label {
   z-index: 10;
 
   &.starting ul {
-    top: 140px;
+    top: 185px;
   }
 
   &.destination ul {
-    top: 210px;
+    top: 255px;
   }
 
   ul {
@@ -152,56 +163,11 @@ label {
   }
 }
 
-.map-container {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-
-.tooltip-content {
-  max-width: 250px;
-  padding: i.$padding-sm i.$padding-md;
-  display: flex;
-  gap: i.$padding-sm;
-  flex-direction: column;
-  font-size: i.$font-size-sm;
-  border-radius: i.$border-radius-lg;
-  background-color: var(--background-secondary);
-  box-shadow: i.$box-shadow-lg;
-
-  h2 {
-    font-size: i.$font-size-md;
-    font-weight: 500;
-    color: var(--header);
-  }
-
-  p {
-    color: var(--text-muted);
-  }
-
-  button {
-    padding: i.$padding-xs i.$padding-sm;
-    align-self: flex-start;
-    font-size: i.$font-size-sm;
-    font-weight: 500;
-    border-radius: i.$border-radius-md;
-    background-color: var(--primary-background);
-    color: var(--background);
-    transition: i.transition(background-color), i.transition(color);
-
-    &:hover {
-      background-color: var(--primary);
-    }
-  }
-}
 
 %action_button {
-  flex: 1;
-  margin: i.$margin-sm auto;
-  padding: i.$padding-xs i.$padding-md;
+  margin: auto auto i.$margin-sm auto;
   width: 60%;
+  padding: i.$padding-sm i.$padding-md;
   display: flex;
   gap: i.$margin-sm;
   justify-content: center;

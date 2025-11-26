@@ -1,0 +1,67 @@
+<ko-stage [config]="{
+    width     : window.innerWidth * 0.85,
+    height    : shownParameters() ? window.innerHeight * 0.45 : window.innerHeight * 0.6,
+    draggable : true,
+  }" (wheel)="mouseZoom($event)" #map (touchstart)="onPinchStart($event)" (touchmove)="onPinchMove($event)" (touchend)="onPinchEnd($event)">
+  <ko-layer>
+    <ko-image [config]="mapImage" />
+    @let navigationPath = path();
+    @if (navigationPath && navigationPath.length > 1) {
+      <ko-line [config]="{
+          points : navigationPath,
+          stroke : 'blue',
+          strokeWidth : 4,
+          lineCap : 'round',
+          lineJoin : 'round',
+          tension : 0.5
+        }" />
+    }
+    @for (point of points(); track point.id) {
+      @let isStaircasePoint = ('up_stair_id' in point) || ('down_stair_id' in point);
+      @let isRoomPoint = 'room_number' in point;
+      @let isExitPoint = 'exit_name' in point;
+      <ko-circle [config]="{
+        x : point.x_coordinate,
+        y : point.y_coordinate,
+        radius : 20,
+        fill : isStaircasePoint ? 'orange' : isExitPoint ? 'green' : 'red',
+      }" (click)="selectedPoint.set(point)" (touchstart)="selectedPoint.set(point)" [tooltipMap]="tooltip" />
+      <ko-text [config]="{
+          x : point.x_coordinate - 12.5,
+          y : point.y_coordinate - 7,
+          text : isRoomPoint ? point.room_number : isExitPoint ? point.exit_name : isStaircasePoint ? 'S' + point.id : '',
+          fontSize : 16,
+          fontFamily : 'Public Sans',
+          fill : 'black',
+          verticalAlign : 'middle',
+          align : 'center'
+        }" (click)="selectedPoint.set(point)" (touchstart)="selectedPoint.set(point)" [tooltipMap]="tooltip" />
+    }
+  </ko-layer>
+</ko-stage>
+
+<tooltip #tooltip>
+  @let point = selectedPoint();
+  @if (point) {
+    <div class="tooltip-content">
+      <h2>
+        @if ('room_number' in point) {
+          Sala {{ point.room_number }}
+        } @else if ('exit_name' in point) {
+          Wyjście {{ point.exit_name }}
+        } @else if ('up_stair_id' in point) {
+          Schody S{{ point.id }}
+        } @else {
+          Punkt {{ point.id }}
+        }
+      </h2>
+      <p>{{ point.description }}</p>
+      <button class="primary" (click)="startingPoint.emit(point); tooltip.hide()">Ustaw jako punkt startowy</button>
+      <button class="secondary" (click)="destinationPoint.emit(point); tooltip.hide()">Ustaw jako punkt docelowy</button>
+    </div>
+  } @else {
+    <div class="tooltip-content">
+      <p>Brak informacji o punkcie</p>
+    </div>
+  }
+</tooltip>

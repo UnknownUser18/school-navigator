@@ -1,17 +1,14 @@
-import { Component, effect, signal, viewChild } from '@angular/core';
-import { CoreShapeComponent, NgKonvaEventObject, StageComponent } from "ng2-konva";
-import Konva from "konva";
+import { Component, effect, signal } from '@angular/core';
 import { Exit, Floors, MapService, Point, Room } from '@services/map.service';
-import { Tooltip } from "@modules/tooltip/component/tooltip";
-import { TooltipMapDirective } from "@modules/tooltip/directive/tooltip-map";
 import { Chip } from "@modules/chip/chip";
 import { FaIconComponent } from "@fortawesome/angular-fontawesome";
-import { faArrowRight, faChevronUp, faLocationDot, faSearch } from "@fortawesome/free-solid-svg-icons";
+import { faArrowDown, faArrowRight, faArrowUp, faChevronUp, faLocationDot, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatRipple } from "@angular/material/core";
 import { Maneuver, Navigation } from "@services/navigation";
 import { MatBottomSheet } from "@angular/material/bottom-sheet";
 import { BottomSheet } from "@modules/bottom-sheet/bottom-sheet";
+import { MapContainer } from "@components/map-container/map-container";
 
 type Suggestion = {
   type : 'room' | 'exit' | 'staircase';
@@ -22,51 +19,40 @@ type Suggestion = {
 
 @Component({
   selector    : 'app-map',
-  imports     : [
-    StageComponent,
-    CoreShapeComponent,
-    TooltipMapDirective,
-    Tooltip,
+  imports : [
     Chip,
     FaIconComponent,
     FormsModule,
     MatRipple,
     ReactiveFormsModule,
+    MapContainer,
   ],
   templateUrl : './map.html',
   styleUrl    : './map.scss',
 })
 export class MapComponent {
-  private lastPinchDistance : number | null = null;
-  private lastPinchScale : number | null = null;
   private readonly fullPath = signal<Maneuver[][] | null>(null);
-
-  protected readonly map = viewChild.required<StageComponent>('map');
 
   protected readonly selectedStorey = signal<Floors>(Floors.FIRST);
   protected readonly points = signal<Point[] | null>(null);
-  protected readonly selectedPoint = signal<Point | null>(null);
   protected readonly startingPlaceSuggestions = signal<Suggestion[] | null>(null);
   protected readonly destinationPlaceSuggestions = signal<Suggestion[] | null>(null);
   protected readonly path = signal<number[] | null>(null);
   protected readonly maneuvers = signal<Maneuver[] | null>(null);
+  protected readonly showParameters = signal<boolean>(true);
 
   protected readonly faSearch = faSearch;
   protected readonly faLocationDot = faLocationDot;
   protected readonly faChevronUp = faChevronUp;
   protected readonly faArrowRight = faArrowRight;
-  protected readonly window = window;
+  protected readonly faArrowUp = faArrowUp;
+  protected readonly faArrowDown = faArrowDown;
 
   protected navigationForm = new FormGroup({
     startingPlace    : new FormControl('', [Validators.required]),
     destinationPlace : new FormControl('', [Validators.required]),
   });
 
-  protected readonly mapImage = {
-    image : new Image(),
-    x     : 0,
-    y     : 0,
-  };
 
   protected readonly floors = [
     { label : 'Piwnica', value : Floors.UNDERGROUND, ariaLabel : 'Przejdź do piwnicy' },
@@ -79,17 +65,10 @@ export class MapComponent {
   constructor(private mapS : MapService,
               private navigationS : Navigation,
               private matBottomSheet : MatBottomSheet) {
-    const mapImageRecord : Record<Floors, string> = {
-      [Floors.UNDERGROUND] : 'Underground',
-      [Floors.GROUND]      : 'Ground',
-      [Floors.FIRST]       : 'First',
-      [Floors.SECOND]      : 'Second',
-      [Floors.THIRD]       : 'Third',
-    };
+
 
     effect(() => {
       this.selectedStorey();
-      this.mapImage.image.src = `assets/maps/${ mapImageRecord[this.selectedStorey()] }.png`;
 
       const pointsFromStorey = this.mapS.getPointsFromStorey(this.selectedStorey());
       this.points.set(pointsFromStorey);
@@ -108,29 +87,6 @@ export class MapComponent {
     });
   }
 
-  private changeScale(direction : -1 | 1) {
-    const scaleBy = 1.05;
-
-    const oldScale = this.map().getStage().scaleX();
-    const pointer = this.map().getStage().getPointerPosition()!;
-
-    const mousePointTo = {
-      x : (pointer.x - this.map().getStage().x()) / oldScale,
-      y : (pointer.y - this.map().getStage().y()) / oldScale,
-    };
-
-    // Limit zoom scale
-    let newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy;
-    newScale = Math.max(0.1, Math.min(4, newScale));
-
-    this.map().getStage().scale({ x : newScale, y : newScale });
-
-    const newPos = {
-      x : pointer.x - mousePointTo.x * newScale,
-      y : pointer.y - mousePointTo.y * newScale,
-    };
-    this.map().getStage().position(newPos);
-  }
 
   private getFlagsFromQuery(query : string) : 'room' | 'connector' | 'exit' | null {
     const match = new RegExp('^(sala|wyjście|klatka schodowa)\\s+', 'i').exec(query);
@@ -196,12 +152,6 @@ export class MapComponent {
     }
   }
 
-  private getPinchDistance(event : TouchEvent) : number {
-    const [touch1, touch2] = [event.touches[0], event.touches[1]];
-    const dx = touch2.clientX - touch1.clientX;
-    const dy = touch2.clientY - touch1.clientY;
-    return Math.sqrt(dx * dx + dy * dy);
-  }
 
   protected getDestinationPlaceSuggestions() {
     if (this.getDestinationPlace.length === 0) {
@@ -250,66 +200,6 @@ export class MapComponent {
 
   protected clearDestinationPlaceSuggestions() {
     this.destinationPlaceSuggestions.set(null);
-  }
-
-  protected mouseZoom(ngEvent : NgKonvaEventObject<WheelEvent> | WheelEvent) {
-
-    let direction : -1 | 1;
-    if ('event' in ngEvent) {
-      ngEvent.event.evt.preventDefault();
-      direction = ngEvent.event.evt.deltaY > 0 ? -1 : 1;
-    } else {
-      ngEvent.preventDefault();
-      direction = ngEvent.deltaY > 0 ? -1 : 1;
-    }
-    this.changeScale(direction);
-  }
-
-  protected onPinchStart(event : NgKonvaEventObject<TouchEvent> | TouchEvent) {
-    if ('event' in event) {
-      event.event.evt.preventDefault();
-      if (event.event.evt.touches.length === 2) {
-        this.lastPinchDistance = this.getPinchDistance(event.event.evt);
-        this.lastPinchScale = this.map().getStage().scaleX();
-      }
-    } else if (event.touches.length === 2) {
-      this.lastPinchDistance = this.getPinchDistance(event);
-      this.lastPinchScale = this.map().getStage().scaleX();
-    }
-  }
-
-  protected onPinchMove(event : NgKonvaEventObject<TouchEvent> | TouchEvent) {
-    if ('event' in event) {
-      if (event.event.evt.touches.length === 2 && this.lastPinchDistance !== null && this.lastPinchScale !== null) {
-        event.event.evt.preventDefault();
-        const newDist = this.getPinchDistance(event.event.evt);
-        let scale = (newDist / this.lastPinchDistance) * this.lastPinchScale;
-        scale = Math.max(0.5, Math.min(4, scale));
-        this.map().getStage().scale({ x : scale, y : scale });
-      }
-      return;
-    }
-    if (event.touches.length === 2 && this.lastPinchDistance !== null && this.lastPinchScale !== null) {
-      event.preventDefault();
-      const newDist = this.getPinchDistance(event);
-      let scale = (newDist / this.lastPinchDistance) * this.lastPinchScale;
-      scale = Math.max(0.5, Math.min(4, scale));
-      this.map().getStage().scale({ x : scale, y : scale });
-    }
-  }
-
-  protected onPinchEnd(event : NgKonvaEventObject<TouchEvent> | TouchEvent) {
-    if ('event' in event) {
-      if (event.event.evt.touches.length < 2) {
-        this.lastPinchDistance = null;
-        this.lastPinchScale = null;
-      }
-      return;
-    }
-    if (event.touches.length < 2) {
-      this.lastPinchDistance = null;
-      this.lastPinchScale = null;
-    }
   }
 
   protected checkIfCanNavigate() {
@@ -380,6 +270,5 @@ export class MapComponent {
   protected startNavigation() {
 
   }
-
 }
 

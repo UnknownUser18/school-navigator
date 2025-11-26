@@ -23,7 +23,6 @@ export class TooltipMapDirective {
    */
   protected createMapTooltip(event : unknown) {
     const interactionEvent = event as NgKonvaEventObject<MouseEvent | TouchEvent>;
-    // Jeśli tooltip jest widoczny, zamknij go natychmiast
     if (this.tooltip().isVisible()) {
       this.tooltip().hide();
       setTimeout(() => {

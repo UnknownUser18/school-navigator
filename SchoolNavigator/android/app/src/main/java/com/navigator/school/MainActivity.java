@@ -13,8 +13,6 @@ public class MainActivity extends BridgeActivity {
     super.onCreate(savedInstanceState);
     hideSystemUI();
     WebView.setWebContentsDebuggingEnabled(true);
-    WebView web = new WebView(this);
-    web.clearCache(true);
 
     WebView webView = getBridge().getWebView();
 
