@@ -25,6 +25,9 @@ export class Navigation {
   private static readonly GRID_SCALE = 5;
   private readonly points = signal<AllPoints | null>(null);
 
+  private readonly navigation = signal<Maneuver[][] | null>(null);
+  private readonly maneuvers = signal<Maneuver[] | null>(null);
+
   private mapS = inject(MapService);
 
   constructor() {}
@@ -370,7 +373,19 @@ export class Navigation {
     );
   }
 
-  public setNavigation(path : Maneuver[][]) {
+  public set setNavigation(path : Maneuver[][] | null) {
+    this.navigation.set(path);
+  }
 
+  public get getNavigation() : Maneuver[][] | null {
+    return this.navigation();
+  }
+
+  public set setManuevers(path : Maneuver[] | null) {
+    this.maneuvers.set(path);
+  }
+
+  public get getManuevers() : Maneuver[] | null {
+    return this.maneuvers();
   }
 }

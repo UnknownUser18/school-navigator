@@ -9,6 +9,7 @@ import { Maneuver, Navigation } from "@services/navigation";
 import { MatBottomSheet } from "@angular/material/bottom-sheet";
 import { BottomSheet } from "@modules/bottom-sheet/bottom-sheet";
 import { MapContainer } from "@components/map-container/map-container";
+import { Router } from "@angular/router";
 
 type Suggestion = {
   type : 'room' | 'exit' | 'staircase';
@@ -64,7 +65,8 @@ export class MapComponent {
 
   constructor(private mapS : MapService,
               private navigationS : Navigation,
-              private matBottomSheet : MatBottomSheet) {
+              private matBottomSheet : MatBottomSheet,
+              private router : Router) {
 
 
     effect(() => {
@@ -211,7 +213,6 @@ export class MapComponent {
     if (startingPlace.trim() === destinationPlace.trim())
       return;
 
-
     const startPoint = this.mapS.getPointFromQuery(startingPlace);
     const endPoint = this.mapS.getPointFromQuery(destinationPlace);
 
@@ -219,7 +220,6 @@ export class MapComponent {
       return;
 
     this.navigationS.navigate(startPoint, endPoint).subscribe((path) => {
-
       const maneuversList = path?.maneuvers!;
       const orderList = path?.order!;
 
@@ -232,13 +232,9 @@ export class MapComponent {
 
       this.fullPath.set(path.maneuvers);
 
-
       const sortedManeuvers = orderList.map((index) => {
         return maneuversList[index];
       });
-
-      console.log(sortedManeuvers);
-
       this.maneuvers.set(sortedManeuvers.flat());
 
       const filteredPath = path.maneuvers[this.selectedStorey() + 1]; // Floors enum starts at -1
@@ -268,7 +264,9 @@ export class MapComponent {
   }
 
   protected startNavigation() {
-
+    this.navigationS.setNavigation = this.fullPath()!;
+    this.navigationS.setManuevers = this.maneuvers()!;
+    this.router.navigate(['/navigation']).then();
   }
 }
 

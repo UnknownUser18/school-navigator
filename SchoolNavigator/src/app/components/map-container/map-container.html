@@ -3,7 +3,7 @@
     height    : shownParameters() ? window.innerHeight * 0.45 : window.innerHeight * 0.6,
     draggable : true,
   }" (wheel)="mouseZoom($event)" #map (touchstart)="onPinchStart($event)" (touchmove)="onPinchMove($event)" (touchend)="onPinchEnd($event)">
-  <ko-layer>
+  <ko-layer #layer>
     <ko-image [config]="mapImage" />
     @let navigationPath = path();
     @if (navigationPath && navigationPath.length > 1) {
@@ -16,26 +16,38 @@
           tension : 0.5
         }" />
     }
-    @for (point of points(); track point.id) {
-      @let isStaircasePoint = ('up_stair_id' in point) || ('down_stair_id' in point);
-      @let isRoomPoint = 'room_number' in point;
-      @let isExitPoint = 'exit_name' in point;
+    @if (position()) {
       <ko-circle [config]="{
+        x : position()!.x,
+        y : position()!.y,
+        radius : 15,
+        fill : 'rgba(93,130,222,0.75)',
+      }" />
+    }
+
+    @if (points()) {
+      @for (point of points(); track point.id) {
+        @let isStaircasePoint = ('up_stair_id' in point) || ('down_stair_id' in point);
+        @let isRoomPoint = 'room_number' in point;
+        @let isExitPoint = 'exit_name' in point;
+        <ko-circle [config]="{
         x : point.x_coordinate,
         y : point.y_coordinate,
         radius : 20,
-        fill : isStaircasePoint ? 'orange' : isExitPoint ? 'green' : 'red',
+        fill : isStaircasePoint ? 'orange' : isExitPoint ? 'green' : '#137FEC',
       }" (click)="selectedPoint.set(point)" (touchstart)="selectedPoint.set(point)" [tooltipMap]="tooltip" />
-      <ko-text [config]="{
+        <ko-text [config]="{
           x : point.x_coordinate - 12.5,
           y : point.y_coordinate - 7,
           text : isRoomPoint ? point.room_number : isExitPoint ? point.exit_name : isStaircasePoint ? 'S' + point.id : '',
           fontSize : 16,
           fontFamily : 'Public Sans',
-          fill : 'black',
+          fontStyle : '600',
+          fill : !isExitPoint ? 'white' : 'black',
           verticalAlign : 'middle',
           align : 'center'
         }" (click)="selectedPoint.set(point)" (touchstart)="selectedPoint.set(point)" [tooltipMap]="tooltip" />
+      }
     }
   </ko-layer>
 </ko-stage>

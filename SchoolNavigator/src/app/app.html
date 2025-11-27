@@ -1,21 +1,23 @@
 <main>
   <router-outlet />
 </main>
-<nav>
-  <a matRipple matRippleColor="var(--background-ripple)" routerLink="/home" routerLinkActive="active" aria-label="Strona główna">
-    <fa-icon [icon]="faHome" />
-    Start
-  </a>
-  <a matRipple matRippleColor="var(--background-ripple)" routerLink="/timetable" routerLinkActive="active" aria-label="Plan lekcji">
-    <fa-icon [icon]="faCalendarAlt" />
-    Plan lekcji
-  </a>
-  <a matRipple matRippleColor="var(--background-ripple)" routerLink="map" routerLinkActive="active" aria-label="Mapa szkoły">
-    <fa-icon [icon]="faMap" />
-    Mapa
-  </a>
-  <a matRipple matRippleColor="var(--background-ripple)" routerLink="/settings" routerLinkActive="active" aria-label="Ustawienia">
-    <fa-icon [icon]="faCog" />
-    Ustawienia
-  </a>
-</nav>
+@if (showNav()) {
+  <nav>
+    <a matRipple matRippleColor="var(--background-ripple)" routerLink="/home" routerLinkActive="active" aria-label="Strona główna">
+      <fa-icon [icon]="faHome" />
+      Start
+    </a>
+    <a matRipple matRippleColor="var(--background-ripple)" routerLink="/timetable" routerLinkActive="active" aria-label="Plan lekcji">
+      <fa-icon [icon]="faCalendarAlt" />
+      Plan lekcji
+    </a>
+    <a matRipple matRippleColor="var(--background-ripple)" routerLink="map" routerLinkActive="active" aria-label="Mapa szkoły">
+      <fa-icon [icon]="faMap" />
+      Mapa
+    </a>
+    <a matRipple matRippleColor="var(--background-ripple)" routerLink="/settings" routerLinkActive="active" aria-label="Ustawienia">
+      <fa-icon [icon]="faCog" />
+      Ustawienia
+    </a>
+  </nav>
+}

@@ -1,1 +1,88 @@
-<p>navigation works!</p>
+<map-container [selectedFloor]="currentFloor()!" [shownParameters]="false" [path]="path()" [position]="currentPosition()" />
+
+<chip [isSelected]="false" (click)="centerToCurrentPosition()">
+  @if (currentFloor() > 0) {
+    Piętro
+  } @else {
+    Poziom
+  }
+  <b>@switch (currentFloor()) {
+    @case (-1) {
+      Piwnica
+    }
+    @case (0) {
+      Parter
+    }
+    @case (1) {
+      Pierwsze
+    }
+    @case (2) {
+      Drugie
+    }
+    @case (3) {
+      Trzecie
+    }
+  }
+  </b>
+</chip>
+
+@if (maneuvers()) {
+  @for (maneuver of topManeuvers; track $index) {
+    <div class="maneuver"
+         [class.first]="$first"
+         [class.last]="$last">
+      <div class="icon">
+        @switch (maneuver.instruction) {
+          @case ('straight') {
+            <fa-icon [icon]="faArrowUp" />
+          }
+          @case ('down') {
+            <fa-icon [icon]="faStairs" />
+          }
+          @case ('up') {
+            <fa-icon [icon]="faStairs" />
+          }
+          @case ('left') {
+            <fa-icon [icon]="faArrowLeft" />
+          }
+          @case ('right') {
+            <fa-icon [icon]="faArrowRight" />
+          }
+        }
+      </div>
+      <h3>
+        @switch (maneuver.instruction) {
+          @case ('straight') {
+            Idź prosto {{ maneuver.distance.toFixed(2) }} metrów
+          }
+          @case ('down') {
+            Zejdź o piętro niżej
+          }
+          @case ('up') {
+            Wejdź o piętro wyżej
+          }
+          @case ('left') {
+            Skręć w lewo
+          }
+          @case ('right') {
+            Skręć w prawo
+          }
+        }
+      </h3>
+    </div>
+  }
+}
+
+<div class="buttons">
+  <button (click)="close()" class="close-button" matRipple [matRippleColor]="'var(--background-ripple)'">
+    <fa-icon [icon]="faTimes" />
+  </button>
+  <button (click)="previousStep()" class="previous-button" matRipple [matRippleColor]="'var(--background-ripple)'" [disabled]="!hasPreviousStep()">
+    Poprzedni krok
+    <fa-icon [icon]="faArrowLeft" />
+  </button>
+  <button (click)="nextStep()" class="next-button" matRipple [matRippleColor]="'var(--background-ripple)'" [disabled]="!hasNextStep()">
+    Następny krok
+    <fa-icon [icon]="faArrowRight" />
+  </button>
+</div>

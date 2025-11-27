@@ -1,13 +1,12 @@
 import { Component, effect, input, output, signal, viewChild } from '@angular/core';
-import { Exit, Floors, Point, Room } from "@services/map.service";
+import { Floors, Point } from "@services/map.service";
 import { CoreShapeComponent, NgKonvaEventObject, StageComponent } from "ng2-konva";
-import { BottomSheet } from "@modules/bottom-sheet/bottom-sheet";
 import { TooltipMapDirective } from "@modules/tooltip/directive/tooltip-map";
 import { Tooltip } from "@modules/tooltip/component/tooltip";
 
 @Component({
   selector    : 'map-container',
-  imports : [
+  imports     : [
     CoreShapeComponent,
     StageComponent,
     TooltipMapDirective,
@@ -21,6 +20,7 @@ export class MapContainer {
   private lastPinchScale : number | null = null;
 
   protected readonly map = viewChild.required<StageComponent>('map');
+  protected readonly layer = viewChild.required<CoreShapeComponent>('layer')
   protected readonly selectedPoint = signal<Point | null>(null);
   protected readonly window = window;
 
@@ -34,6 +34,7 @@ export class MapContainer {
   public readonly shownParameters = input.required<boolean>();
   public readonly points = input<Point[] | null>(null);
   public readonly path = input<number[] | null>(null);
+  public readonly position = input<{ x : number; y : number } | null>(null);
 
   public readonly startingPoint = output<Point>();
   public readonly destinationPoint = output<Point>();
@@ -50,6 +51,17 @@ export class MapContainer {
     effect(() => {
       this.selectedFloor();
       this.mapImage.image.src = `assets/maps/${ mapImageRecord[this.selectedFloor()] }.png`;
+    });
+
+    effect(() => {
+      this.position();
+      if (this.position() === null) return;
+
+      const x = this.position()?.x ?? 0;
+      const y = this.position()?.y ?? 0;
+
+      if (!this.map().getStage()) return;
+      this.layer().getStage().position({ x : -x + this.map().getStage().width() / 2, y : -y + this.map().getStage().height() / 2 })
     });
   }
 

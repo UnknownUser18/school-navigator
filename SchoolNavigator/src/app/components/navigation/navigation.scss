@@ -1,0 +1,135 @@
+@use 'index' as i;
+
+:host {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.maneuver {
+  position: absolute;
+  margin: 0 i.$margin-sm;
+  width: 95%;
+  padding: i.$padding-sm i.$padding-md;
+  display: flex;
+  gap: i.$padding-md;
+  align-items: center;
+  border-radius: i.$border-radius-lg;
+  background-color: var(--primary);
+  transition: i.transition(background-color);
+  box-shadow: i.$box-shadow-md;
+  top: 85px;
+
+  &:first-of-type {
+    top: 25px !important;
+  }
+
+  &:nth-of-type(2) {
+    top: 85px !important;
+  }
+
+  &.first {
+    top: 25px;
+  }
+
+  &.last {
+    background-color: var(--primary-background);
+    top: 145px;
+  }
+
+  .icon {
+    padding: i.$padding-sm;
+    border-radius: i.$border-radius-full;
+    background-color: var(--background-secondary);
+    color: var(--primary);
+  }
+
+  h3 {
+    width: 100%;
+    font-size: i.$font-size-md;
+    font-weight: 500;
+    color: var(--background);
+    text-align: center;
+  }
+}
+
+
+map-container {
+  margin-top: 150px;
+}
+
+.buttons {
+  margin: i.$margin-lg i.$margin-sm;
+  display: flex;
+  justify-content: space-between;
+}
+
+.close-button {
+  padding: i.$padding-sm;
+  font-size: i.$font-size-sm;
+  border-radius: i.$border-radius-full;
+  background-color: var(--error);
+  color: var(--background);
+  box-shadow: i.$box-shadow-sm;
+}
+
+%action_button {
+  padding: i.$padding-xs i.$padding-md;
+  display: flex;
+  gap: i.$padding-sm;
+  justify-content: center;
+  align-items: center;
+  font-size: i.$font-size-sm;
+  font-weight: 500;
+  border-radius: i.$border-radius-lg;
+  box-shadow: i.$box-shadow-sm;
+}
+
+.previous-button {
+  @extend %action_button;
+  background-color: var(--background-secondary);
+  color: var(--text);
+
+  fa-icon {
+    color: var(--primary);
+  }
+
+  &:disabled {
+    background-color: var(--background-divider);
+    color: var(--text-muted);
+
+    fa-icon {
+      color: var(--text-muted);
+    }
+  }
+}
+
+.next-button {
+  @extend %action_button;
+  background-color: var(--primary);
+  color: var(--background);
+
+  fa-icon {
+    color: var(--background);
+  }
+
+  &:disabled {
+    background-color: var(--background-secondary);
+    color: var(--text-muted);
+
+    fa-icon {
+      color: var(--text-muted);
+    }
+  }
+}
+
+chip {
+  margin: i.$margin-sm auto;
+  width: fit-content;
+}
