@@ -33,16 +33,17 @@
 
 @let canNavigate = maneuvers() !== null && maneuvers()!.length > 0;
 
-<button class="start-navigation-button" (click)="startNavigation()" matRipple [matRippleColor]="'var(--primary-ripple)'" [disabled]="!canNavigate">
-  Rozpocznij nawigację
-  <fa-icon [icon]="faArrowRight" />
-</button>
+@if (!showParameters()) {
+  <button class="start-navigation-button" (click)="startNavigation()" matRipple [matRippleColor]="'var(--primary-ripple)'" [disabled]="!canNavigate">
+    Rozpocznij nawigację
+    <fa-icon [icon]="faArrowRight" />
+  </button>
 
-<button class="show-navigation-steps" [disabled]="!canNavigate" (click)="openBottomSheet()" matRipple [matRippleColor]="'var(--primary-ripple)'">
-  Pokaż szczegóły trasy
-  <fa-icon [icon]="faChevronUp" />
-</button>
-
+  <button class="show-navigation-steps" [disabled]="!canNavigate" (click)="openBottomSheet()" matRipple [matRippleColor]="'var(--primary-ripple)'">
+    Pokaż szczegóły trasy
+    <fa-icon [icon]="faChevronUp" />
+  </button>
+}
 
 @if (startingPlaceSuggestions()) {
   <div class="suggestions-backdrop starting" (click)="clearStartingPlaceSuggestions()">

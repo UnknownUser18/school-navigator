@@ -1,0 +1,143 @@
+@use 'index' as i;
+
+:host {
+  height: 100%;
+  display: block;
+}
+
+h2 {
+  margin-bottom: i.$margin-sm;
+  padding: i.$padding-lg 0;
+  font-size: i.$font-size-lg;
+  background-color: var(--background-tertiary);
+  color: var(--header);
+  text-align: center;
+}
+
+.no-timetable {
+  margin: auto;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  gap: i.$margin-sm;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  text-align: center;
+}
+
+h3 {
+  font-size: i.$font-size-lg;
+  font-weight: 500;
+  color: var(--header);
+}
+
+p {
+  font-size: i.$font-size-sm;
+  color: var(--text-muted);
+}
+
+button {
+  padding: i.$padding-sm i.$padding-md;
+  cursor: pointer;
+  font-size: i.$font-size-md;
+  border: none;
+  border-radius: i.$border-radius-md;
+  background-color: var(--primary);
+  color: var(--background);
+}
+
+.table-wrapper {
+  margin-top: i.$margin-sm;
+  max-height: 65%;
+  overflow-y: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+tr {
+  border-bottom: i.$base-border var(--background-divider);
+
+  &:nth-child(even) {
+    background-color: var(--background-tertiary);
+  }
+}
+
+td {
+  padding: i.$padding-sm;
+  text-align: center;
+
+  &:first-child span {
+    width: 50px;
+    padding: i.$padding-md;
+    display: inline-block;
+    font-weight: 500;
+    border-radius: i.$border-radius-sm;
+    background-color: var(--background-secondary);
+  }
+
+  &:nth-child(3) {
+    min-width: 110px;
+    font-size: i.$font-size-sm;
+  }
+
+  &:last-child {
+    font-size: i.$font-size-sm;
+  }
+}
+
+.lesson-info {
+  display: flex;
+  gap: i.$margin-xs;
+  flex-direction: column;
+  text-align: justify;
+
+  h4 {
+    font-size: i.$font-size-md;
+    font-weight: 500;
+    color: var(--header);
+  }
+}
+
+.no-lessons {
+  margin-top: i.$margin-2xl * 3.5;
+  padding: i.$padding-md 0;
+  display: flex;
+  gap: i.$margin-sm;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  font-size: i.$font-size-sm;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.actions {
+  margin-top: i.$margin-md;
+  display: flex;
+  gap: i.$margin-sm;
+  justify-content: center;
+}
+
+button {
+  padding: i.$padding-sm i.$padding-md;
+  display: flex;
+  gap: i.$padding-sm;
+  justify-content: center;
+  align-items: center;
+  font-weight: 500;
+  border-radius: i.$border-radius-lg;
+  color: var(--background);
+}
+
+.edit {
+  background-color: var(--primary);
+}
+
+.delete {
+  background-color: var(--background-secondary);
+  color: var(--text);
+}

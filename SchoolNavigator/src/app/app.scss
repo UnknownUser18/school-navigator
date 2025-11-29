@@ -8,6 +8,8 @@
 
 main {
   flex: 1;
+  max-height: calc(100% - 60px);
+  overflow-y: hidden;
 }
 
 nav {

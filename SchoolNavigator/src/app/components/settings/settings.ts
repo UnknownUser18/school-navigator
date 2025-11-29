@@ -1,6 +1,6 @@
 import { Component, effect, inject, PLATFORM_ID, signal } from '@angular/core';
 import { FaIconComponent } from "@fortawesome/angular-fontawesome";
-import { faArrowLeft, faRotateBack, faWarning } from "@fortawesome/free-solid-svg-icons";
+import { faRotateBack, faWarning } from "@fortawesome/free-solid-svg-icons";
 import { faMoon } from "@fortawesome/free-regular-svg-icons";
 import { MapService } from "@services/map.service";
 import { isPlatformBrowser } from "@angular/common";
@@ -18,7 +18,6 @@ export class Settings {
 
   protected readonly success = signal<boolean | null>(null);
 
-  protected readonly faArrowLeft = faArrowLeft;
   protected readonly faMoon = faMoon;
   protected readonly faWarning = faWarning;
   protected readonly faRotateBack = faRotateBack;

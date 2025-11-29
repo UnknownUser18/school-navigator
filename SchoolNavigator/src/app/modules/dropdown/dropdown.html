@@ -1,0 +1,10 @@
+<div (click)="toggleVisibility()">
+  <h3>{{ dropdownText() }}</h3>
+  <p>{{ secondaryText() }}</p>
+  <fa-icon [icon]="faChevronDown" [class.open]="isOpen()" />
+</div>
+@if (isOpen()) {
+  <div class="dropdown-menu" animate.enter="enter-from-top" animate.leave="leave-to-top">
+    <ng-content />
+  </div>
+}

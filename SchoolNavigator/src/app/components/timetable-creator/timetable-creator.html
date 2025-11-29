@@ -1,0 +1,45 @@
+<div class="day-selector">
+  @for (day of DayNames; track day) {
+    <chip [isSelected]="day === currentDay()" (click)="selectDay(day)">{{ day }}</chip>
+  }
+</div>
+<form [formGroup]="dayForm">
+  @for (lesson of lessonsArray; track lesson) {
+    <dropdown [formGroupName]="'lesson' + lesson" [dropdownText]="'Lekcja ' + lesson" [secondaryText]="getTime(lesson)">
+      <label>
+        Przedmiot:
+        <input type="text" formControlName="subjectName" placeholder="Przedmiot">
+      </label>
+      <label>
+        Nauczyciel:
+        <input type="text" formControlName="teacherName" placeholder="Nauczyciel">
+      </label>
+      <label>
+        Sala:
+        <select formControlName="roomNumber">
+          @for (room of rooms(); track room.id) {
+            <option [value]="room.room_number">{{ room.room_number }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        Godzina rozpoczęcia:
+        <input type="time" formControlName="startTime">
+      </label>
+      <label>
+        Godzina zakończenia:
+        <input type="time" formControlName="endTime">
+      </label>
+    </dropdown>
+  }
+</form>
+<div class="actions">
+  <button (click)="saveTimetable()" matRipple matRippleColor="var(--primary-ripple)" class="add">
+    Zapisz plan
+    <fa-icon [icon]="faSave" />
+  </button>
+  <button (click)="clearTimetable()" matRipple matRippleColor="var(--background-ripple)" class="clear">
+    Wyczyść plan
+    <fa-icon [icon]="faTrash" />
+  </button>
+</div>

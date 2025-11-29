@@ -1,0 +1,93 @@
+@use 'index' as i;
+
+form {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+dropdown {
+  margin: i.$margin-xl i.$margin-lg;
+}
+
+label {
+  margin-bottom: i.$margin-sm;
+  display: flex;
+  gap: i.$margin-md;
+  align-items: center;
+  font-weight: 500;
+  color: var(--header);
+}
+
+input {
+  width: 100%;
+  padding: i.$padding-2xs i.$padding-xs;
+  border-radius: i.$border-radius-md;
+  background-color: var(--background-secondary);
+  transition: i.transition(outline-color), i.transition(color);
+  outline: i.$base-border var(--background-divider);
+
+  &:focus {
+    color: var(--text);
+    outline: i.$base-border var(--primary);
+  }
+
+  &::placeholder {
+    color: var(--text-muted);
+  }
+}
+
+select {
+  width: 100%;
+  padding: i.$padding-2xs i.$padding-xs;
+  font-family: inherit;
+  border-radius: i.$border-radius-md;
+  background-color: var(--background-secondary);
+  transition: i.transition(outline-color), i.transition(color);
+  outline: i.$base-border var(--background-divider);
+
+  &:focus {
+    color: var(--text);
+    outline: i.$base-border var(--primary);
+  }
+}
+
+option {
+  background-color: var(--background-secondary);
+  color: var(--text);
+}
+
+.day-selector {
+  margin: i.$margin-md auto 0 auto;
+  width: 90%;
+  display: flex;
+  gap: i.$margin-sm;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.actions {
+  margin: i.$margin-lg auto i.$margin-sm auto;
+  width: 90%;
+  display: flex;
+  justify-content: space-between;
+}
+
+button {
+  padding: i.$padding-sm i.$padding-md;
+  display: flex;
+  gap: i.$padding-sm;
+  justify-content: center;
+  align-items: center;
+  font-weight: 500;
+  border-radius: i.$border-radius-lg;
+
+  &.add {
+    background-color: var(--primary);
+    color: var(--background);
+  }
+
+  &.clear {
+    background-color: var(--background-secondary);
+    color: var(--text);
+  }
+}

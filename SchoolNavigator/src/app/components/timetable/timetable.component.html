@@ -1,0 +1,57 @@
+<h2>Plan Lekcji</h2>
+@if (!timetable()) {
+  <div class="no-timetable">
+    <h3>Brak planu lekcji</h3>
+    <p>Nie ustawiono jeszcze planu lekcji</p>
+    <button routerLink="/timetable-creator" matRipple matRippleColor="'var(--primary-ripple)'">
+      Ustaw plan lekcji
+      <fa-icon [icon]="faArrowRight" />
+    </button>
+  </div>
+} @else {
+  @for (day of DayNames; track $index) {
+    <chip [isSelected]="day === currentDay()" (click)="currentDay.set(day)">{{ day }}</chip>
+  }
+
+  @if (!shownDay() || shownDay()!.lessons.length === 0) {
+    <div class="no-lessons">
+      <h3>Brak lekcji</h3>
+      <p>W tym dniu nie ma zaplanowanych lekcji albo nie odnotowano w planie lekcji.</p>
+    </div>
+  }
+  <div class="table-wrapper">
+    <table>
+      <tbody>
+        @for (lesson of shownDay()?.lessons; track $index) {
+          <tr (click)="navigateToRoom(lesson.roomNumber)">
+            <td>
+              <span>{{ $index + 1 }}</span>
+            </td>
+            <td>
+              <div class="lesson-info">
+                <h4>{{ lesson.subjectName }}</h4>
+                <p>{{ lesson.teacherName }}</p>
+              </div>
+            </td>
+            <td>
+              {{ lesson.startTime | convertTime }} - {{ lesson.endTime | convertTime }}
+            </td>
+            <td>
+              sala {{ lesson.roomNumber }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <div class="actions">
+    <button routerLink="/timetable-creator" matRipple matRippleColor="'var(--primary-ripple)'" class="edit">
+      Edytuj plan lekcji
+      <fa-icon [icon]="faEdit" />
+    </button>
+    <button (click)="deleteTimetable()" matRipple matRippleColor="'var(--background-ripple)'" class="delete">
+      Usuń plan lekcji
+      <fa-icon [icon]="faTrash" />
+    </button>
+  </div>
+}

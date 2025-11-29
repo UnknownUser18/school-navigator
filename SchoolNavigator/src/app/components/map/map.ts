@@ -9,7 +9,7 @@ import { Maneuver, Navigation } from "@services/navigation";
 import { MatBottomSheet } from "@angular/material/bottom-sheet";
 import { BottomSheet } from "@modules/bottom-sheet/bottom-sheet";
 import { MapContainer } from "@components/map-container/map-container";
-import { Router } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 
 type Suggestion = {
   type : 'room' | 'exit' | 'staircase';
@@ -20,7 +20,7 @@ type Suggestion = {
 
 @Component({
   selector    : 'app-map',
-  imports : [
+  imports     : [
     Chip,
     FaIconComponent,
     FormsModule,
@@ -66,8 +66,18 @@ export class MapComponent {
   constructor(private mapS : MapService,
               private navigationS : Navigation,
               private matBottomSheet : MatBottomSheet,
-              private router : Router) {
+              private router : Router,
+              private route : ActivatedRoute) {
+    this.route.queryParams.subscribe(params => {
+      const roomQuery = params['room'];
+      if (!roomQuery) return;
 
+      const roomPoint = this.mapS.getPointFromQuery(roomQuery);
+      if (!roomPoint) return;
+
+      this.navigationForm.get('destinationPlace')?.setValue(roomPoint instanceof Room ? roomPoint.room_number : roomPoint instanceof Exit ? roomPoint.exit_name : `S${ roomPoint.id }`);
+      this.checkIfCanNavigate();
+    })
 
     effect(() => {
       this.selectedStorey();
